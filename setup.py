@@ -8,9 +8,9 @@ setup(
     version = "0.0.1",
     author = "Kilean Hwang",
     author_email = "kilean@lbl.gov",
-    description = ("templates for pytorch apis"),
+    description = ("Templates for pyTorch APIs"),
     license = "Lawrence Berkeley National Laboratory",
-    keywords = "pyTorch", "template"
+    keywords = ["pyTorch", "template","pyTorchTemplate"],
     url = "",
     packages=['pyTorchTemplate'],
     #package_data={'pImpactR': ['xmain']},

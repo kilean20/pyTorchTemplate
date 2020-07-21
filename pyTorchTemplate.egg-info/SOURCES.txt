@@ -1,0 +1,8 @@
+setup.py
+pyTorchTemplate/__init__.py
+pyTorchTemplate/pyTorchTemplate.py
+pyTorchTemplate.egg-info/PKG-INFO
+pyTorchTemplate.egg-info/SOURCES.txt
+pyTorchTemplate.egg-info/dependency_links.txt
+pyTorchTemplate.egg-info/not-zip-safe
+pyTorchTemplate.egg-info/top_level.txt

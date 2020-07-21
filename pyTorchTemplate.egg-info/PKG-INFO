@@ -1,0 +1,14 @@
+Metadata-Version: 1.1
+Name: pyTorchTemplate
+Version: 0.0.1
+Summary: Templates for pyTorch APIs
+Home-page: UNKNOWN
+Author: Kilean Hwang
+Author-email: kilean@lbl.gov
+License: Lawrence Berkeley National Laboratory
+Description: UNKNOWN
+Keywords: pyTorch,template,pyTorchTemplate
+Platform: UNKNOWN
+Classifier: Development Status :: 1 - Planning
+Classifier: Topic :: Utilities
+Classifier: License :: Free for non-commercial use
