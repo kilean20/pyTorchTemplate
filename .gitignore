@@ -1,0 +1,4 @@
+*.so
+*.pyc
+pyTorchTemplate.egg-info/
+pyTorchTemplate/__pycache__/
