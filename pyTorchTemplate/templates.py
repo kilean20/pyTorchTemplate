@@ -5,7 +5,9 @@ import pickle
 from copy import deepcopy as copy
   
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
+# def set_num_threads(n):
+#     torch.set_num_threads(n)
+    
 ####################################
 ## Models
 ####################################
@@ -159,25 +161,29 @@ def get_val_loss_supervised(model,val_data_loader,criterion):
 ####################################
 ## Train
 ####################################      
-def train_supervised(model,lr,epochs,fname,
-                     train_data_loader,test_data_loader,val_data_loader=None,
+def train_supervised(model,lr,epochs,
+                     train_data_loader,test_data_loader=None,val_data_loader=None,
                      criterion=torch.nn.MSELoss(),
                      optimizer=torch.optim.Adam,
-                     old_hist = {'train_loss':[],
-                                 'test_loss' :[]},
+                     fname = None,
+                     old_hist = None,
                      old_best_loss = 1e15,
                      get_best_model = False,
                      disp = True,
-                     args = {}):
+                     args = None):
 
     opt = torch.optim.Adam(model.parameters(),lr=lr)
     
+    if old_hist == None:
+        old_hist ={'train_loss':[],'test_loss' :[]}
 
     old_epochs = len(old_hist['train_loss'])
-    hist = {'train_loss':np.zeros(old_epochs+epochs),
-           'test_loss'  :np.zeros(old_epochs+epochs)}
+    hist = {'train_loss':np.zeros(old_epochs+epochs)}
+           
     hist['train_loss'][:old_epochs] = old_hist['train_loss'][:]
-    hist['test_loss' ][:old_epochs] = old_hist['test_loss' ][:]
+    if 'test_loss' in old_hist:
+        hist['test_loss'] = np.zeros(old_epochs+epochs)
+        hist['test_loss'][:old_epochs] = old_hist['test_loss' ][:]
     
       
     for epoch in range(epochs):
@@ -193,42 +199,59 @@ def train_supervised(model,lr,epochs,fname,
             opt.step()
             train_loss += loss.item()
         train_loss /= len(train_data_loader)
-
-
-        model.eval()
-        test_loss = 0
-        with torch.no_grad():
-            for inputs, outputs in test_data_loader:
-                inputs = inputs.to(device)
-                model_outputs = model(inputs)
-                loss = criterion(outputs.to(device), model_outputs)
-                test_loss += loss.item()
-        test_loss /= len(test_data_loader)
-
         hist['train_loss'][old_epochs+epoch] = train_loss
-        hist['test_loss' ][old_epochs+epoch] = test_loss
 
-        
-        if test_loss < old_best_loss:
-            old_best_loss = test_loss
-            checkpoint = {'epoch':old_epochs+epoch, 
-                          'model':model,
-                          'model_state_dict':model.state_dict(), 
-                          'optimizer':opt,
-                          'optimizer_state_dict':opt.state_dict()}
-            torch.save(checkpoint, fname + '_best.checkpoint')
+        if test_data_loader != None:
+            model.eval()
+            test_loss = 0
+            with torch.no_grad():
+                for inputs, outputs in test_data_loader:
+                    inputs = inputs.to(device)
+                    model_outputs = model(inputs)
+                    loss = criterion(outputs.to(device), model_outputs)
+                    test_loss += loss.item()
+            test_loss /= len(test_data_loader)
+            hist['test_loss' ][old_epochs+epoch] = test_loss
+
+            if test_loss < old_best_loss:
+                old_best_loss = test_loss
+                checkpoint = {'epoch':old_epochs+epoch, 
+                              'model':model,
+                              'model_state_dict':model.state_dict(), 
+                              'optimizer':opt,
+                              'optimizer_state_dict':opt.state_dict()}
+                if fname!=None:
+                    torch.save(checkpoint, fname + '_best.checkpoint')
+                else:
+                    torch.save(checkpoint, '_best.checkpoint')
 
         
         # display the epoch training loss
         if disp:
-            print("epoch : {}/{}, train loss = {:.6f}, test loss = {:.6f}".format(
-                  old_epochs +epoch, old_epochs +epochs, 
-                  hist['train_loss'][old_epochs +epoch], 
-                  hist['test_loss'][old_epochs +epoch]))
+            if test_data_loader != None:
+                print("epoch : {}/{}, train loss = {:.6f}, test loss = {:.6f}".format(
+                      old_epochs +epoch, old_epochs +epochs, 
+                      hist['train_loss'][old_epochs +epoch], 
+                      hist['test_loss'][old_epochs +epoch]))
+            else:
+                print("epoch : {}/{}, train loss = {:.6f}".format(
+                      old_epochs +epoch, old_epochs +epochs, 
+                      hist['train_loss'][old_epochs +epoch]))
+
+    checkpoint = {'epoch':old_epochs+epoch, 
+                  'model':model,
+                  'model_state_dict':model.state_dict(), 
+                  'optimizer':opt,
+                  'optimizer_state_dict':opt.state_dict()}
+    if fname!=None:
+        torch.save(checkpoint, fname + '_trainingEnd.checkpoint')
             
             
-    if get_best_model:
-        checkpoint = torch.load(fname + '_best.checkpoint')
+    if get_best_model and test_data_loader!=None:
+        if fname!=None:
+            checkpoint = torch.load(fname + '_best.checkpoint')
+        else:
+            checkpoint = torch.load('_best.checkpoint')
         model.load_state_dict(checkpoint['model_state_dict'])
 
     if val_data_loader != None:
@@ -244,3 +267,20 @@ def train_supervised(model,lr,epochs,fname,
 ###################################################
 def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
+
+
+def get_derivatives(n,func,x,args):
+    '''
+    inputs
+      n: order of derivatives
+      func(x,**args): scalar function with scalar input x and constant arguments
+    output
+      df: list of derivatives from 0th to nth
+    '''
+    xtmp = torch.Tensor([x])
+    xtmp.requires_grad = True
+    f = func(xtmp,**args)
+    df = [f]
+    for i in range(n):
+        df.append(torch.autograd.grad(df[-1], xtmp, create_graph=True))
+    return [item[0].item() for item in df]
