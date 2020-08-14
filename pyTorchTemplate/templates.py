@@ -268,19 +268,90 @@ def train_supervised(model,lr,epochs,
 def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
+       
 
-def get_derivatives(n,func,x,args):
+def get_derivatives_scalar_input(n,func,x,create_graph=False):
     '''
     inputs
       n: order of derivatives
-      func(x,**args): scalar function with scalar input x and constant arguments
+      func(x): scalar function with a scalar input x
     output
-      df: list of derivatives from 0th to nth
+      df: represent df/dx
     '''
     xtmp = torch.Tensor([x])
     xtmp.requires_grad = True
-    f = func(xtmp,**args)
+    f = func(xtmp)
     df = [f]
     for i in range(n):
-        df.append(torch.autograd.grad(df[-1], xtmp, create_graph=True))
-    return [item[0].item() for item in df]
+        df.append(torch.autograd.grad(df[-1], xtmp, create_graph=True)[0])
+    if create_graph:
+        return df
+    else:
+        return np.array([item.item() for item in df])
+    
+    
+
+def get_derivatives_vector_input(n,func,x,create_graph=False):
+    '''
+    inputs
+      n: order of derivatives (1<=n<=4)
+      func(x): scalar function with a vector input x
+    output
+      df: list of matrices of derivatives (ex) [Jacobian (n), Hessian (n x n), 3rd derivatives (n x n x n)...]
+    '''
+    
+    dim_x = len(x)
+    xtmp = torch.Tensor(x)
+    xtmp.requires_grad = True
+    f = func(xtmp)
+    df = torch.autograd.grad(f, xtmp, create_graph=True)[0]
+    if n==1:
+        if create_graph:
+            return df
+        else:
+            return df.detach().numpy()
+    
+    ddf = []
+    for d in range(dim_x):
+        ddf.append(torch.autograd.grad(df[d], xtmp, create_graph=True)[0])
+    ddf = torch.cat(ddf).reshape((dim_x,dim_x))
+    if n==2:
+        if create_graph:
+            return df,ddf
+        else:
+            return df.detach().numpy(), ddf.detach().numpy()
+
+    
+    dddf = [0]*dim_x
+    for d1 in range(dim_x):
+        dddf[d1] = [0]*dim_x
+        for d2 in range(dim_x):
+            dddf[d1][d2] = torch.autograd.grad(ddf[d1,d2], xtmp, create_graph=True)[0]
+        dddf[d1] = torch.cat(dddf[d1]).reshape((dim_x,dim_x))
+    dddf = torch.cat(dddf).reshape((dim_x,dim_x,dim_x))
+    if n==3:
+        if create_graph:
+            return df,ddf,dddf
+        else:
+            return df.detach().numpy(), ddf.detach().numpy(), dddf.detach().numpy()
+        
+    
+    ddddf = [0]*dim_x
+    for d1 in range(dim_x):
+        ddddf[d1] = [0]*dim_x
+        for d2 in range(dim_x):
+            ddddf[d1][d2] = [0]*dim_x
+            for d3 in range(dim_x):
+                ddddf[d1][d2][d3] = torch.autograd.grad(dddf[d1,d2,d3], xtmp, create_graph=True)[0]
+            ddddf[d1][d2] = torch.cat(ddddf[d1][d2]).reshape((dim_x,dim_x))
+        ddddf[d1] = torch.cat(ddddf[d1]).reshape((dim_x,dim_x,dim_x))
+    ddddf = torch.cat(ddddf).reshape((dim_x,dim_x,dim_x,dim_x))
+    
+        
+    if create_graph:
+        return df,ddf,dddf,ddddf
+    else:
+        return df.detach().numpy(), ddf.detach().numpy(), dddf.detach().numpy(), ddddf.detach().numpy()
+    
+    
+    

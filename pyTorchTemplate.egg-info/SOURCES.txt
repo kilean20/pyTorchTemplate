@@ -1,6 +1,7 @@
 setup.py
 pyTorchTemplate/__init__.py
-pyTorchTemplate/pyTorchTemplate.py
+pyTorchTemplate/plot.py
+pyTorchTemplate/templates.py
 pyTorchTemplate.egg-info/PKG-INFO
 pyTorchTemplate.egg-info/SOURCES.txt
 pyTorchTemplate.egg-info/dependency_links.txt
