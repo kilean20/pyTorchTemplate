@@ -1,8 +1,16 @@
 from __future__ import print_function
 import sys
 import os
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+from copy import deepcopy as copy
+
+tmp = copy(sys.path)
+sys.path.clear()
+path = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, path)
 
 
-from templates import *
-import plot
+from torch_templates import *
+import torch_template_plot as plot
+
+
+sys.path = tmp
