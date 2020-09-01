@@ -218,8 +218,12 @@ def train_supervised(model,lr,epochs,
                     test_loss += loss.item()
             test_loss /= len(test_data_loader)
             hist['test_loss' ][old_epochs+epoch] = test_loss
+<<<<<<< HEAD
         
         flag_best = False
+=======
+            
+>>>>>>> 7a29e64e1b6b1eb5c7c686c74bd3f141cf59fee1
         if old_best_loss != None:
             if test_loss < old_best_loss:
                 flag_best = True
@@ -256,7 +260,11 @@ def train_supervised(model,lr,epochs,
         torch.save(checkpoint, fname + '_trainingEnd.checkpoint')
             
             
+<<<<<<< HEAD
     if old_best_loss !=None and flag_best:
+=======
+    if old_best_loss !=None:
+>>>>>>> 7a29e64e1b6b1eb5c7c686c74bd3f141cf59fee1
         if fname!=None:
             checkpoint = torch.load(fname + '_best.checkpoint')
         else:
