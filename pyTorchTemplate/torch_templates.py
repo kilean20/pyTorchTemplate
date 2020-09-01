@@ -260,11 +260,7 @@ def train_supervised(model,lr,epochs,
         torch.save(checkpoint, fname + '_trainingEnd.checkpoint')
             
             
-<<<<<<< HEAD
-    if old_best_loss !=None and flag_best:
-=======
     if old_best_loss !=None:
->>>>>>> 7a29e64e1b6b1eb5c7c686c74bd3f141cf59fee1
         if fname!=None:
             checkpoint = torch.load(fname + '_best.checkpoint')
         else:
