@@ -170,6 +170,7 @@ def train_supervised(model,lr,epochs,
                      old_best_loss = 1e15,
                      get_best_model = False,
                      disp = True,
+                     flagEvalMode = False,
                      args = None):
 
     opt = torch.optim.Adam(model.parameters(),lr=lr)
@@ -187,7 +188,10 @@ def train_supervised(model,lr,epochs,
     
       
     for epoch in range(epochs):
-        model.train()
+        if flagEvalMode:
+            model.eval()
+        else:
+            model.train()
         train_loss = 0
         for inputs, outputs in train_data_loader:
 #             print('inputs.shape, outputs.shape=',inputs.shape, outputs.shape)
