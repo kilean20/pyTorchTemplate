@@ -167,8 +167,7 @@ def train_supervised(model,lr,epochs,
                      optimizer=torch.optim.Adam,
                      fname = None,
                      old_hist = None,
-                     old_best_loss = 1e15,
-                     get_best_model = False,
+                     old_best_loss = None,
                      disp = True,
                      flagEvalMode = False,
                      args = None):
@@ -205,7 +204,10 @@ def train_supervised(model,lr,epochs,
         train_loss /= len(train_data_loader)
         hist['train_loss'][old_epochs+epoch] = train_loss
 
-        if test_data_loader != None:
+        
+        if test_data_loader == None:
+            test_loss = train_loss
+        else:
             model.eval()
             test_loss = 0
             with torch.no_grad():
@@ -216,8 +218,11 @@ def train_supervised(model,lr,epochs,
                     test_loss += loss.item()
             test_loss /= len(test_data_loader)
             hist['test_loss' ][old_epochs+epoch] = test_loss
-
+        
+        flag_best = False
+        if old_best_loss != None:
             if test_loss < old_best_loss:
+                flag_best = True
                 old_best_loss = test_loss
                 checkpoint = {'epoch':old_epochs+epoch, 
                               'model':model,
@@ -251,7 +256,7 @@ def train_supervised(model,lr,epochs,
         torch.save(checkpoint, fname + '_trainingEnd.checkpoint')
             
             
-    if get_best_model and test_data_loader!=None:
+    if old_best_loss !=None and flag_best:
         if fname!=None:
             checkpoint = torch.load(fname + '_best.checkpoint')
         else:
@@ -262,7 +267,7 @@ def train_supervised(model,lr,epochs,
         val_loss = get_val_loss_supervised(model,val_data_loader,criterion)
         print('validation_loss:',val_loss)
         
-    return model,hist   
+    return model,hist
     
         
 
