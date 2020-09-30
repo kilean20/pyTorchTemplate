@@ -197,7 +197,7 @@ def train_supervised(model,epochs,
             model_outputs = model(inputs)
             loss = criterion(outputs.to(device), model_outputs)
             loss.backward()
-            optimizer.step()
+            optimizer.step(loss)
             train_loss += loss.item()
         train_loss /= len(train_data_loader)
         hist['train_loss'][old_epochs+epoch] = train_loss
