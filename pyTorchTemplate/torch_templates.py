@@ -161,18 +161,16 @@ def get_val_loss_supervised(model,val_data_loader,criterion):
 ####################################
 ## Train
 ####################################      
-def train_supervised(model,lr,epochs,
+def train_supervised(model,epochs,
+                     optimizer,
                      train_data_loader,test_data_loader=None,val_data_loader=None,
                      criterion=torch.nn.MSELoss(),
-                     optimizer=torch.optim.Adam,
                      fname = None,
                      old_hist = None,
                      old_best_loss = None,
                      disp = True,
                      flagEvalMode = False,
                      args = None):
-
-    opt = torch.optim.Adam(model.parameters(),lr=lr)
     
     if old_hist == None:
         old_hist ={'train_loss':[],'test_loss' :[]}
@@ -194,12 +192,12 @@ def train_supervised(model,lr,epochs,
         train_loss = 0
         for inputs, outputs in train_data_loader:
 #             print('inputs.shape, outputs.shape=',inputs.shape, outputs.shape)
-            opt.zero_grad()
+            optimizer.zero_grad()
             inputs = inputs.to(device)
             model_outputs = model(inputs)
             loss = criterion(outputs.to(device), model_outputs)
             loss.backward()
-            opt.step()
+            optimizer.step()
             train_loss += loss.item()
         train_loss /= len(train_data_loader)
         hist['train_loss'][old_epochs+epoch] = train_loss
@@ -220,6 +218,8 @@ def train_supervised(model,lr,epochs,
             hist['test_loss' ][old_epochs+epoch] = test_loss
 
             
+            
+            
         flag_best = False
         if old_best_loss != None:
             if test_loss < old_best_loss:
@@ -228,8 +228,8 @@ def train_supervised(model,lr,epochs,
                 checkpoint = {'epoch':old_epochs+epoch, 
                               'model':model,
                               'model_state_dict':model.state_dict(), 
-                              'optimizer':opt,
-                              'optimizer_state_dict':opt.state_dict()}
+                              'optimizer':optimizer,
+                              'optimizer_state_dict':optimizer.state_dict()}
                 if fname!=None:
                     torch.save(checkpoint, fname + '_best.checkpoint')
                 else:
@@ -248,16 +248,19 @@ def train_supervised(model,lr,epochs,
                       old_epochs +epoch, old_epochs +epochs, 
                       hist['train_loss'][old_epochs +epoch]))
 
+                
+                
     checkpoint = {'epoch':old_epochs+epoch, 
                   'model':model,
                   'model_state_dict':model.state_dict(), 
-                  'optimizer':opt,
-                  'optimizer_state_dict':opt.state_dict()}
+                  'optimizer':optimizer,
+                  'optimizer_state_dict':optimizer.state_dict()}
     if fname!=None:
         torch.save(checkpoint, fname + '_trainingEnd.checkpoint')
             
+             
             
-    if old_best_loss !=None:
+    if old_best_loss !=None and flag_best:
         if fname!=None:
             checkpoint = torch.load(fname + '_best.checkpoint')
         else:
