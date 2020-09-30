@@ -192,12 +192,16 @@ def train_supervised(model,epochs,
         train_loss = 0
         for inputs, outputs in train_data_loader:
 #             print('inputs.shape, outputs.shape=',inputs.shape, outputs.shape)
-            optimizer.zero_grad()
-            inputs = inputs.to(device)
-            model_outputs = model(inputs)
-            loss = criterion(outputs.to(device), model_outputs)
-            loss.backward()
-            optimizer.step(loss)
+            inputs = inputs.to(device)   
+            outputs = outputs.to(device)
+            def closure():
+                optimizer.zero_grad()
+                model_outputs = model(inputs)
+                loss = criterion(outputs, model_outputs)
+                loss.backward()
+                return loss
+            
+            optimizer.step(closure)
             train_loss += loss.item()
         train_loss /= len(train_data_loader)
         hist['train_loss'][old_epochs+epoch] = train_loss
