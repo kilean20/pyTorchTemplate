@@ -3,6 +3,7 @@ import torch
 from torch.nn import functional as F
 import pickle
 from copy import deepcopy as copy
+from IPython.display import display, clear_output
   
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # def set_num_threads(n):
@@ -168,7 +169,8 @@ def train_supervised(model,lr,epochs,
                      fname = None,
                      old_hist = None,
                      old_best_loss = None,
-                     disp = True,
+                     dispHead = 10,
+                     dispTail = 10,
                      flagEvalMode = False,
                      args = None):
 
@@ -185,7 +187,6 @@ def train_supervised(model,lr,epochs,
         hist['test_loss'] = np.zeros(old_epochs+epochs)
         hist['test_loss'][:old_epochs] = old_hist['test_loss' ][:]
     
-      
     for epoch in range(epochs):
         if flagEvalMode:
             model.eval()
@@ -239,7 +240,7 @@ def train_supervised(model,lr,epochs,
 
         
         # display the epoch training loss
-        if disp:
+        if epoch < dispHead  or epoch >= epochs -dispTail:
             if test_data_loader != None:
                 print("epoch : {}/{}, train loss = {:.6f}, test loss = {:.6f}".format(
                       old_epochs +epoch, old_epochs +epochs, 
@@ -249,7 +250,8 @@ def train_supervised(model,lr,epochs,
                 print("epoch : {}/{}, train loss = {:.6f}".format(
                       old_epochs +epoch, old_epochs +epochs, 
                       hist['train_loss'][old_epochs +epoch]))
-
+        else:
+            display("epoch : "+str(old_epochs +epoch)+"/"+str(old_epochs +epoch))
                 
                 
     checkpoint = {'epoch':old_epochs+epoch, 
