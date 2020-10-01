@@ -241,7 +241,7 @@ def train_supervised(model,lr,epochs,
         
         # display the epoch training loss
         if epoch < dispHead  or epoch >= epochs -dispTail:
-            end = None
+            end = ''
         else:
             end = '\r'
         if test_data_loader != None:
