@@ -241,17 +241,19 @@ def train_supervised(model,lr,epochs,
         
         # display the epoch training loss
         if epoch < dispHead  or epoch >= epochs -dispTail:
-            if test_data_loader != None:
-                print("epoch : {}/{}, train loss = {:.6f}, test loss = {:.6f}".format(
-                      old_epochs +epoch, old_epochs +epochs, 
-                      hist['train_loss'][old_epochs +epoch], 
-                      hist['test_loss'][old_epochs +epoch]))
-            else:
-                print("epoch : {}/{}, train loss = {:.6f}".format(
-                      old_epochs +epoch, old_epochs +epochs, 
-                      hist['train_loss'][old_epochs +epoch]))
+            end = None
         else:
-            display("epoch : "+str(old_epochs +epoch)+"/"+str(old_epochs +epoch))
+            end = '\r'
+        if test_data_loader != None:
+            print("epoch : {}/{}, train loss = {:.6f}, test loss = {:.6f}".format(
+                  old_epochs +epoch, old_epochs +epochs, 
+                  hist['train_loss'][old_epochs +epoch], 
+                  hist['test_loss'][old_epochs +epoch]), end=end)
+        else:
+            print("epoch : {}/{}, train loss = {:.6f}".format(
+                  old_epochs +epoch, old_epochs +epochs, 
+                  hist['train_loss'][old_epochs +epoch]), end=end)
+
                 
                 
     checkpoint = {'epoch':old_epochs+epoch, 
