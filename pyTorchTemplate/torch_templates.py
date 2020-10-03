@@ -173,7 +173,7 @@ def train_supervised(model,lr,epochs,
                      dispTail = 10,
                      flagEvalMode = False,
                      args = None):
-
+    model = model.to(device)
     opt = torch.optim.Adam(model.parameters(),lr=lr)
     
     if old_hist == None:
