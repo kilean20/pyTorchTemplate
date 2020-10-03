@@ -197,8 +197,9 @@ def train_supervised(model,lr,epochs,
 #             print('inputs.shape, outputs.shape=',inputs.shape, outputs.shape)
             opt.zero_grad()
             inputs = inputs.to(device)
+            outputs = outputs.to(device)
             model_outputs = model(inputs)
-            loss = criterion(outputs.to(device), model_outputs)
+            loss = criterion(outputs, model_outputs)
             loss.backward()
             opt.step()
             train_loss += loss.item()
@@ -214,8 +215,9 @@ def train_supervised(model,lr,epochs,
             with torch.no_grad():
                 for inputs, outputs in test_data_loader:
                     inputs = inputs.to(device)
+                    outputs = outputs.to(device)
                     model_outputs = model(inputs)
-                    loss = criterion(outputs.to(device), model_outputs)
+                    loss = criterion(outputs, model_outputs)
                     test_loss += loss.item()
             test_loss /= len(test_data_loader)
             hist['test_loss' ][old_epochs+epoch] = test_loss
