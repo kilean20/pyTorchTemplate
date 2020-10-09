@@ -115,7 +115,6 @@ class _resFCNN(torch.nn.Module):
         super(_resFCNN, self).__init__()
         
         self.nodes = nodes
-        self.layers = layers
         self.activation = activation
         self.dropout_p = dropout_p
         
