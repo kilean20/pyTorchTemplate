@@ -101,9 +101,9 @@ class Linear_wResidualBlock(torch.nn.Module):
                 
         
         if dropout_p > 0.0:
-            self.nn = torch.nn.Sequential([torch.nn.Linear(nodes[0],nodes[-1]),torch.nn.Dropout(dropout_p), activation])
+            self.nn = torch.nn.Sequential(torch.nn.Linear(nodes[0],nodes[-1]),torch.nn.Dropout(dropout_p), activation)
         else:
-            self.nn = torch.nn.Sequential([torch.nn.Linear(nodes[0],nodes[-1]),                             activation])
+            self.nn = torch.nn.Sequential(torch.nn.Linear(nodes[0],nodes[-1]),                             activation)
 
     def forward(self, x):
         y  = self.nn(x)
