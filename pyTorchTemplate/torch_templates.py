@@ -114,17 +114,14 @@ class _resFCNN(torch.nn.Module):
     def __init__(self, nodes, activation, dropout_p=0.0, res_trainable=False, res_initZeros=True, identity_block_every_layer=True):
         super(_resFCNN, self).__init__()
         
-        self.nodes = nodes
-        self.activation = activation
-        self.dropout_p = dropout_p
         
         self.layers = []
-        for i in range(len(self.nodes)-2):
+        for i in range(len(nodes)-2):
             temp_nodes = [nodes[i],min(nodes[i],nodes[i+1]),min(nodes[i],nodes[i+1]),nodes[i+1]]
-            self.layers.append(FCNN_Linear_wResidualBlock(temp_nodes,activation,dropout,res_trainable,res_initZeros))
+            self.layers.append(FCNN_Linear_wResidualBlock(temp_nodes,activation,dropout_p,res_trainable,res_initZeros))
             if identity_block_every_layer:
                 temp_nodes = [nodes[i+1],nodes[i+1]]
-                self.layers.append(FCNN_IdentityBlock(temp_nodes,activation,dropout,res_trainable,res_initZeros))
+                self.layers.append(FCNN_IdentityBlock(temp_nodes,activation,dropout_p,res_trainable,res_initZeros))
                
         self.layers.append(torch.nn.Linear(nodes[-2],nodes[-1]))
                 
