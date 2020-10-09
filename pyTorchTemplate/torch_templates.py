@@ -85,11 +85,11 @@ class Linear_wResidualBlock(torch.nn.Module):
         
         self.seq = []
         for i in range(len(self.nodes)-2):
-            if self.dropout_p > 0.0:
-                self.seq = self.seq + [torch.nn.Linear(self.nodes[i],self.nodes[i+1]),torch.nn.Dropout(self.dropout_p), self.activation]
+            if dropout_p > 0.0:
+                self.seq = self.seq + [torch.nn.Linear(nodes[i],nodes[i+1]),torch.nn.Dropout(dropout_p), activation]
             else:
-                self.seq = self.seq + [torch.nn.Linear(self.nodes[i],self.nodes[i+1]),                                  self.activation]
-        self.seq = self.seq + [torch.nn.Linear(self.nodes[-2],self.nodes[-1]),self.activation]
+                self.seq = self.seq + [torch.nn.Linear(nodes[i],nodes[i+1]),                             activation]
+        self.seq = self.seq + [torch.nn.Linear(nodes[-2],nodes[-1]),activation]
         self.ResidualBlock = torch.nn.Sequential(*self.seq)
         if initZeros:
             for p in self.ResidualBlock.parameters():
@@ -98,10 +98,10 @@ class Linear_wResidualBlock(torch.nn.Module):
             for p in self.ResidualBlock.parameters():
                 p.requires_grad  = False
         
-        if self.dropout_p > 0.0:
-            self.nn = torch.nn.Sequential([torch.nn.Linear(self.nodes[0],self.nodes[-1]),torch.nn.Dropout(self.dropout_p), self.activation])
+        if dropout_p > 0.0:
+            self.nn = torch.nn.Sequential([torch.nn.Linear(nodes[0],nodes[-1]),torch.nn.Dropout(dropout_p), activation])
         else:
-            self.nn = torch.nn.Sequential([torch.nn.Linear(self.nodes[0],self.nodes[-1]),                                  self.activation])
+            self.nn = torch.nn.Sequential([torch.nn.Linear(nodes[0],nodes[-1]),                             activation])
 
     def forward(self, x):
         y  = self.nn(x)
