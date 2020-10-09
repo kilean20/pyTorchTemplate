@@ -116,21 +116,19 @@ class _resFCNN(torch.nn.Module):
         super(_resFCNN, self).__init__()
         
         
-        self.layers = []
+        self.seq = []
         for i in range(len(nodes)-2):
             temp_nodes = [nodes[i],min(nodes[i],nodes[i+1]),min(nodes[i],nodes[i+1]),nodes[i+1]]
-            self.layers.append(Linear_wResidualBlock(temp_nodes,activation,dropout_p,res_trainable,res_initZeros))
+            self.seq.append(Linear_wResidualBlock(temp_nodes,activation,dropout_p,res_trainable,res_initZeros))
             if identity_block_every_layer:
                 temp_nodes = [nodes[i+1],nodes[i+1]]
-                self.layers.append(FCNN_IdentityBlock(temp_nodes,activation,dropout_p,res_trainable,res_initZeros))
+                self.seq.append(FCNN_IdentityBlock(temp_nodes,activation,dropout_p,res_trainable,res_initZeros))
                
-        self.layers.append(torch.nn.Linear(nodes[-2],nodes[-1]))
-                
+        self.seq.append(torch.nn.Linear(nodes[-2],nodes[-1]))
+        self.nn = torch.nn.Sequential(*self.seq)
 
     def forward(self, x):
-        for layer in self.layers:
-            x = layer(x)
-        return x
+        return self.nn(x)
 
     
 def resFCNN(nodes, activation=torch.nn.ReLU(), dropout_p=0.0, res_trainable=False, res_initZeros=True, identity_block_every_layer=True):
