@@ -136,8 +136,8 @@ class _resFCNN(torch.nn.Module):
         return x
 
     
-def resFCNN(nodes, layers, activation=torch.nn.ReLU(), dropout_p=0.0, res_trainable=False, res_initZeros=True, identity_block_every_layer=True):
-    model = _resFCNN(nodes,layers,activation,dropout_p,res_trainable,res_initZeros).to(device)
+def resFCNN(nodes, activation=torch.nn.ReLU(), dropout_p=0.0, res_trainable=False, res_initZeros=True, identity_block_every_layer=True):
+    model = _resFCNN(nodes,activation,dropout_p,res_trainable,res_initZeros).to(device)
     return model
 
 ####################################
