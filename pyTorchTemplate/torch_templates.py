@@ -24,7 +24,7 @@ class _FCNN(torch.nn.Module):
         
         self.seq = []
         for i in range(len(self.nodes)-2):
-            if dropout_p > 0.0:
+            if self.dropout_p > 0.0:
                 self.seq = self.seq + [torch.nn.Linear(self.nodes[i],self.nodes[i+1]),torch.nn.Dropout(self.dropout_p), self.activation]
             else:
                 self.seq = self.seq + [torch.nn.Linear(self.nodes[i],self.nodes[i+1]),                                  self.activation]
@@ -42,91 +42,100 @@ def FCNN(nodes, activation=torch.nn.ReLU(), dropout_p=0.0):
 
 
 
-
-
-
-
-class _resFCNN_BasicBlock(torch.nn.Module):
-    def __init__(self, n_nodes, n_layers, activation, dropout_p=0.0):
-        super(_resFCNN_BasicBlock, self).__init__()
+class FCNN_IdentityBlock(torch.nn.Module):
+    def __init__(self, inout_feature, nodes, activation, dropout_p=0.0, trainable=False, initZeros=True):
+        super(FCNN_IdentityBlock, self).__init__()
         
-        self.node = n_nodes
+        self.nodes = nodes
         self.activation = activation
         self.dropout_p = dropout_p
+        self.trainable = trainable
+        self.initZeros = initZeros
         
-        self.seq = []
-        for i in range(n_layers):
-          self.seq = self.seq + [torch.nn.Linear(n_nodes,n_nodes), torch.nn.Dropout(self.dropout_p), self.activation]
-        self.resNN = torch.nn.Sequential(*self.seq)
-        self.name = 'resFCNN_BasicBlock'
+        if self.dropout_p > 0.0:
+            self.seq = [torch.nn.Linear(inout_feature,self.nodes[0]),torch.nn.Dropout(self.dropout_p), self.activation]
+        else:
+            self.seq = [torch.nn.Linear(inout_feature,self.nodes[0])                                 , self.activation]
+        
+        
+        for i in range(len(self.nodes)-1):
+            if self.dropout_p > 0.0:
+                self.seq = self.seq + [torch.nn.Linear(self.nodes[i],self.nodes[i+1]),torch.nn.Dropout(self.dropout_p), self.activation]
+            else:
+                self.seq = self.seq + [torch.nn.Linear(self.nodes[i],self.nodes[i+1]),                                  self.activation]
+        self.seq = self.seq + [torch.nn.Linear(self.nodes[-1],inout_feature)]
+
+        self.IdentityBlock = torch.nn.Sequential(*self.seq)
+        if initZeros:
+            for p in self.IdentityBlock.parameters():
+                p.data.fill_(0)
+        if not trainable:
+            for p in self.IdentityBlock.parameters():
+                p.requires_grad  = False
 
     def forward(self, x):
-        y  = self.resNN(x)
+        y  = self.IdentityBlock(x)
         y += x
         return y
     
     
-class _resFCNN_BottleNeckBlock(torch.nn.Module):
-    def __init__(self, nodes, n_layers, activation, dropout_p=0.0):
-        super(_resFCNN_BottleNeckBlock, self).__init__()
+class FCNN_Linear_wResidualBlock(torch.nn.Module):
+    
+    def __init__(self, nodes, activation, dropout_p=0.0, trainable=False, initZeros=True):
+        super(FCNN_ResidualBlock, self).__init__()
         
-        self.nodes = nodes
-        self.n_layers = n_layers
-        self.activation = activation
-        self.dropout_p = dropout_p
-        
-        d_node = int((nodes[1] - nodes[0])/n_layers)
         self.seq = []
-        for i in range(n_layers-1):
-            self.seq = self.seq + [torch.nn.Linear(nodes[0]+i*d_node,nodes[0]+(i+1)*d_node), 
-                                   torch.nn.Dropout(dropout_p), 
-                                   self.activation]
-        self.seq = self.seq + [torch.nn.Linear(nodes[0]+(n_layers-1)*d_node,nodes[1]), 
-                               torch.nn.Dropout(dropout_p), 
-                               self.activation]
+        for i in range(len(self.nodes)-2):
+            if self.dropout_p > 0.0:
+                self.seq = self.seq + [torch.nn.Linear(self.nodes[i],self.nodes[i+1]),torch.nn.Dropout(self.dropout_p), self.activation]
+            else:
+                self.seq = self.seq + [torch.nn.Linear(self.nodes[i],self.nodes[i+1]),                                  self.activation]
+        self.seq = self.seq + [torch.nn.Linear(self.nodes[-2],self.nodes[-1]),self.activation]
+        self.ResidualBlock = torch.nn.Sequential(*self.seq)
+        if initZeros:
+            for p in self.ResidualBlock.parameters():
+                p.data.fill_(0)
+        if not trainable:
+            for p in self.ResidualBlock.parameters():
+                p.requires_grad  = False
         
-        self.resNN = torch.nn.Sequential(*self.seq)
-        self.directNN = torch.nn.Sequential(torch.nn.Linear(nodes[0],nodes[1]), 
-                                            torch.nn.Dropout(dropout_p), 
-                                            self.activation)
-        self.name = 'resFCNN_BottleNeckBlock'
+        if self.dropout_p > 0.0:
+            self.nn = torch.nn.Sequential([torch.nn.Linear(self.nodes[0],self.nodes[-1]),torch.nn.Dropout(self.dropout_p), self.activation])
+        else:
+            self.nn = torch.nn.Sequential([torch.nn.Linear(self.nodes[0],self.nodes[-1]),                                  self.activation])
 
     def forward(self, x):
-        y  = self.resNN(x)
-        y += self.directNN(x)
+        y  = self.nn(x)
+        y += self.ResidualBlock(x)
         return y
     
     
 class _resFCNN(torch.nn.Module):
-    def __init__(self, nodes, layers, activation, dropout_p=0.0):
+    def __init__(self, nodes, activation, dropout_p=0.0, res_trainable=False, res_initZeros=True, identity_block_every_layer=True):
         super(_resFCNN, self).__init__()
         
         self.nodes = nodes
         self.layers = layers
         self.activation = activation
         self.dropout_p = dropout_p
-        assert len(nodes) == len(layers)+1
         
-        self.seq = []
-        for i in range(len(layers)):
-            if layers[i]>0:
-                if nodes[i][0]==nodes[i][1]:
-                    self.seq = self.seq + [_resFCNN_BasicBlock(nodes[i][0], layers[i], activation, dropout_p)]
-                else:
-                    self.seq = self.seq + [_resFCNN_BottleNeckBlock(nodes[i], layers[i], activation, dropout_p)]
-            else:
-                self.seq = self.seq + [torch.nn.Linear(self.nodes[i][0],self.nodes[i][1]), activation, torch.nn.Dropout(dropout_p)]
-
-        self.seq = self.seq + [torch.nn.Linear(self.nodes[-1][0],self.nodes[-1][1])]
+        self.layers = []
+        for i in range(len(self.nodes)-2):
+            temp_nodes = [nodes[i],min(nodes[i],nodes[i+1]),min(nodes[i],nodes[i+1]),nodes[i+1]]
+            self.layers.append(FCNN_Linear_wResidualBlock(temp_nodes,activation,dropout,res_trainable,res_initZeros))
+            if identity_block_every_layer:
+                temp_nodes = [nodes[i+1],nodes[i+1]]
+                self.layers.append(FCNN_IdentityBlock(temp_nodes,activation,dropout,res_trainable,res_initZeros))
                 
-        self.nn = torch.nn.Sequential(*self.seq)
-        self.name = 'resFCNN'
 
     def forward(self, x):
-        return self.nn(x)
+        for layer in self.layers:
+            x = layer(x)
+        return x
+
     
-def resFCNN(nodes, layers, activation=torch.nn.ReLU(), dropout_p=0.0):
-    model = _resFCNN(nodes,layers,activation,dropout_p).to(device)
+def resFCNN(nodes, layers, activation=torch.nn.ReLU(), dropout_p=0.0, res_trainable=False, res_initZeros=True, identity_block_every_layer=True):
+    model = _resFCNN(nodes,layers,activation,dropout_p,res_trainable,res_initZeros).to(device)
     return model
 
 ####################################
@@ -174,7 +183,7 @@ def train_supervised(model,lr,epochs,
                      flagEvalMode = False,
                      args = None):
     model = model.to(device)
-    opt = torch.optim.Adam(model.parameters(),lr=lr)
+    opt = torch.optim.Adam(model.parameters(filter(lambda p: p.requires_grad, net.parameters())),lr=lr)
     
     if old_hist == None:
         old_hist ={'train_loss':[],'test_loss' :[]}
