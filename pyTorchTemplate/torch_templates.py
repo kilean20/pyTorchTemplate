@@ -126,6 +126,8 @@ class _resFCNN(torch.nn.Module):
             if identity_block_every_layer:
                 temp_nodes = [nodes[i+1],nodes[i+1]]
                 self.layers.append(FCNN_IdentityBlock(temp_nodes,activation,dropout,res_trainable,res_initZeros))
+               
+        self.layers.append(torch.nn.Linear(nodes[-2],nodes[-1]))
                 
 
     def forward(self, x):
