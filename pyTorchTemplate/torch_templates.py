@@ -79,10 +79,9 @@ class FCNN_IdentityBlock(torch.nn.Module):
         return y
     
     
-class FCNN_Linear_wResidualBlock(torch.nn.Module):
-    
+class Linear_wResidualBlock(torch.nn.Module):
     def __init__(self, nodes, activation, dropout_p=0.0, trainable=False, initZeros=True):
-        super(FCNN_ResidualBlock, self).__init__()
+        super(Linear_wResidualBlock, self).__init__()
         
         self.seq = []
         for i in range(len(self.nodes)-2):
@@ -118,7 +117,7 @@ class _resFCNN(torch.nn.Module):
         self.layers = []
         for i in range(len(nodes)-2):
             temp_nodes = [nodes[i],min(nodes[i],nodes[i+1]),min(nodes[i],nodes[i+1]),nodes[i+1]]
-            self.layers.append(FCNN_Linear_wResidualBlock(temp_nodes,activation,dropout_p,res_trainable,res_initZeros))
+            self.layers.append(Linear_wResidualBlock(temp_nodes,activation,dropout_p,res_trainable,res_initZeros))
             if identity_block_every_layer:
                 temp_nodes = [nodes[i+1],nodes[i+1]]
                 self.layers.append(FCNN_IdentityBlock(temp_nodes,activation,dropout_p,res_trainable,res_initZeros))
