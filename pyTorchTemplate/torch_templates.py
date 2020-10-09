@@ -84,19 +84,21 @@ class Linear_wResidualBlock(torch.nn.Module):
         super(Linear_wResidualBlock, self).__init__()
         
         self.seq = []
-        for i in range(len(self.nodes)-2):
+        for i in range(len(nodes)-2):
             if dropout_p > 0.0:
                 self.seq = self.seq + [torch.nn.Linear(nodes[i],nodes[i+1]),torch.nn.Dropout(dropout_p), activation]
             else:
                 self.seq = self.seq + [torch.nn.Linear(nodes[i],nodes[i+1]),                             activation]
         self.seq = self.seq + [torch.nn.Linear(nodes[-2],nodes[-1]),activation]
         self.ResidualBlock = torch.nn.Sequential(*self.seq)
+        
         if initZeros:
             for p in self.ResidualBlock.parameters():
                 p.data.fill_(0)
         if not trainable:
             for p in self.ResidualBlock.parameters():
                 p.requires_grad  = False
+                
         
         if dropout_p > 0.0:
             self.nn = torch.nn.Sequential([torch.nn.Linear(nodes[0],nodes[-1]),torch.nn.Dropout(dropout_p), activation])
