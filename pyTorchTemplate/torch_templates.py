@@ -55,14 +55,14 @@ class FCNN_IdentityBlock(torch.nn.Module):
         if self.dropout_p > 0.0:
             self.seq = [torch.nn.Linear(inout_feature,self.nodes[0]),torch.nn.Dropout(self.dropout_p), self.activation]
         else:
-            self.seq = [torch.nn.Linear(inout_feature,self.nodes[0])                                 , self.activation]
+            self.seq = [torch.nn.Linear(inout_feature,self.nodes[0]), self.activation]
         
         
         for i in range(len(self.nodes)-1):
             if self.dropout_p > 0.0:
                 self.seq = self.seq + [torch.nn.Linear(self.nodes[i],self.nodes[i+1]),torch.nn.Dropout(self.dropout_p), self.activation]
             else:
-                self.seq = self.seq + [torch.nn.Linear(self.nodes[i],self.nodes[i+1]),                                  self.activation]
+                self.seq = self.seq + [torch.nn.Linear(self.nodes[i],self.nodes[i+1]), self.activation]
         self.seq = self.seq + [torch.nn.Linear(self.nodes[-1],inout_feature)]
 
         self.IdentityBlock = torch.nn.Sequential(*self.seq)
@@ -86,10 +86,13 @@ class Linear_wResidualBlock(torch.nn.Module):
         self.seq = []
         for i in range(len(nodes)-2):
             if dropout_p > 0.0:
-                self.seq = self.seq + [torch.nn.Linear(nodes[i],nodes[i+1]),torch.nn.Dropout(dropout_p), activation]
+                self.seq = self.seq + [torch.nn.Linear(nodes[i],nodes[i+1]), torch.nn.Dropout(dropout_p), activation]
             else:
-                self.seq = self.seq + [torch.nn.Linear(nodes[i],nodes[i+1]),                             activation]
-        self.seq = self.seq + [torch.nn.Linear(nodes[-2],nodes[-1]),activation]
+                self.seq = self.seq + [torch.nn.Linear(nodes[i],nodes[i+1]),                              activation]
+        if dropout_p > 0.0:
+            self.seq = self.seq + [torch.nn.Linear(nodes[-2],nodes[-1]), torch.nn.Dropout(dropout_p), activation]
+        else:    
+            self.seq = self.seq + [torch.nn.Linear(nodes[-2],nodes[-1]),                              activation]
         self.ResidualBlock = torch.nn.Sequential(*self.seq)
         
         if initZeros:
@@ -122,7 +125,7 @@ class _resFCNN(torch.nn.Module):
             self.seq.append(Linear_wResidualBlock(temp_nodes,activation,dropout_p,res_trainable,res_initZeros))
             if identity_block_every_layer:
                 temp_nodes = [nodes[i+1],nodes[i+1]]
-                self.seq.append(FCNN_IdentityBlock(temp_nodes,activation,dropout_p,res_trainable,res_initZeros))
+                self.seq.append(FCNN_IdentityBlock(nodes[i+1],temp_nodes,activation,dropout_p,res_trainable,res_initZeros))
                
         self.seq.append(torch.nn.Linear(nodes[-2],nodes[-1]))
         self.nn = torch.nn.Sequential(*self.seq)
