@@ -172,7 +172,7 @@ class _resFCNN_autoEncoder(torch.nn.Module):
     def forward(self, x):
         return self.decoder(self.encoder(x))
     
-    def get_latent_variable(self.x):
+    def get_latent_variable(self, x):
         return self.encoder(x)
 
 
