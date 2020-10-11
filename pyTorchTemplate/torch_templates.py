@@ -138,6 +138,48 @@ def resFCNN(nodes, activation=torch.nn.ReLU(), dropout_p=0.0, res_trainable=Fals
     model = _resFCNN(nodes,activation,dropout_p,res_trainable,res_initZeros).to(device)
     return model
 
+
+
+class _resFCNN_autoEncoder(torch.nn.Module):
+    def __init__(self, encoder_nodes, decoder_nodes, activation, dropout_p=0.0, res_trainable=False, res_initZeros=True, identity_block_every_layer=True):
+        super(_resFCNN, self).__init__()
+        
+        assert encoder_nodes[-1]==decoder_nodes[0]
+        
+        seq = []
+        for i in range(len(encoder_nodes)-2):
+            temp_encoder_nodes = [encoder_nodes[i],min(encoder_nodes[i],encoder_nodes[i+1]),min(encoder_nodes[i],encoder_nodes[i+1]),encoder_nodes[i+1]]
+            seq.append(Linear_wResidualBlock(temp_encoder_nodes,activation,dropout_p,res_trainable,res_initZeros))
+            if identity_block_every_layer:
+                temp_encoder_nodes = [encoder_nodes[i+1],encoder_nodes[i+1]]
+                seq.append(FCNN_IdentityBlock(encoder_nodes[i+1],temp_encoder_nodes,activation,dropout_p,res_trainable,res_initZeros))
+               
+        seq.append(torch.nn.Linear(encoder_nodes[-2],encoder_nodes[-1]))
+        self.encoder = torch.nn.Sequential(*seq)
+        
+        
+        seq = []
+        for i in range(len(decoder_nodes)-2):
+            temp_decoder_nodes = [decoder_nodes[i],min(decoder_nodes[i],decoder_nodes[i+1]),min(decoder_nodes[i],decoder_nodes[i+1]),decoder_nodes[i+1]]
+            seq.append(Linear_wResidualBlock(temp_decoder_nodes,activation,dropout_p,res_trainable,res_initZeros))
+            if identity_block_every_layer:
+                temp_decoder_nodes = [decoder_nodes[i+1],decoder_nodes[i+1]]
+                seq.append(FCNN_IdentityBlock(decoder_nodes[i+1],temp_decoder_nodes,activation,dropout_p,res_trainable,res_initZeros))
+               
+        seq.append(torch.nn.Linear(decoder_nodes[-2],decoder_nodes[-1]))
+        self.nn = torch.nn.Sequential(*seq)
+
+    def forward(self, x):
+        return self.decoder(self.encoder(x))
+    
+    def get_latent_variable(self.x):
+        return self.encoder(x)
+
+
+def resFCNN_autoEncoder(encoder_nodes,decoder_nodes, activation=torch.nn.ReLU(), dropout_p=0.0, res_trainable=False, res_initZeros=True, identity_block_every_layer=True):
+    model = _resFCNN_autoEncoder(encoder_nodes,decoder_nodes,activation,dropout_p,res_trainable,res_initZeros).to(device)
+    return model
+    
 ####################################
 ## Loss
 ####################################
