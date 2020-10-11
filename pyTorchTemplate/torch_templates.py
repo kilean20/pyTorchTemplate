@@ -167,7 +167,7 @@ class _resFCNN_autoEncoder(torch.nn.Module):
                 seq.append(FCNN_IdentityBlock(decoder_nodes[i+1],temp_decoder_nodes,activation,dropout_p,res_trainable,res_initZeros))
                
         seq.append(torch.nn.Linear(decoder_nodes[-2],decoder_nodes[-1]))
-        self.nn = torch.nn.Sequential(*seq)
+        self.decoder = torch.nn.Sequential(*seq)
 
     def forward(self, x):
         return self.decoder(self.encoder(x))
