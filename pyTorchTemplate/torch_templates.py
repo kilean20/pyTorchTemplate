@@ -225,7 +225,7 @@ def train_supervised(model,lr,epochs,
                      flagEvalMode = False,
                      args = None):
     model = model.to(device)
-    opt = torch.optim.Adam(model.parameters(filter(lambda p: p.requires_grad, net.parameters())),lr=lr)
+    opt = torch.optim.Adam(model.parameters(filter(lambda p: p.requires_grad, model.parameters())),lr=lr)
     
     if old_hist == None:
         old_hist ={'train_loss':[],'test_loss' :[]}
