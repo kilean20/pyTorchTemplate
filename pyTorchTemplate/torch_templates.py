@@ -142,7 +142,7 @@ def resFCNN(nodes, activation=torch.nn.ReLU(), dropout_p=0.0, res_trainable=Fals
 
 class _resFCNN_autoEncoder(torch.nn.Module):
     def __init__(self, encoder_nodes, decoder_nodes, activation, dropout_p=0.0, res_trainable=False, res_initZeros=True, identity_block_every_layer=True):
-        super(_resFCNN, self).__init__()
+        super(_resFCNN_autoEncoder, self).__init__()
         
         assert encoder_nodes[-1]==decoder_nodes[0]
         
