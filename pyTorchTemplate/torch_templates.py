@@ -324,16 +324,17 @@ class resFCNN_VAE():
             train_loss = 0
             for data in train_data_loader:
                 if supervised:
-                    print('data')
-                    print(data)
-                    print('len(data)',len(data))
+#                     print('data')
+#                     print(data)
+#                     print('len(data)',len(data))
                     x=data[0]
                     y=data[1]
                 else:
                     x=data
                     y=x
-                print('len(x)',len(x))
-                print('len(y)',len(y))
+#                 print('len(x)',len(x))
+#                 print('len(y)',len(y))
+                batch_size = len(y)
                 opt.zero_grad()
                 x = x.to(device)
                 y = y.to(device)
