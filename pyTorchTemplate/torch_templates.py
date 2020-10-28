@@ -289,6 +289,7 @@ class resFCNN_VAE():
         return BCE + weight_KLD*KLD
     
     
+    
     def validate(self, data_loader, weight_mu=1, weight_sigma=1, weight_KLD=1, nsample=1):
         self.model.eval()
         test_loss = 0
@@ -321,7 +322,9 @@ class resFCNN_VAE():
                         loss = self.loss_function(y, y_pred, mu, logvar, 
                                                   batch_size, weight_mu, weight_sigma, weight_KLD, nsample)
                         test_loss += loss.item()
-        test_loss /= len(test_data_loader)
+        test_loss /= len(data_loader)
+        
+        
     
     def train(self,lr,epochs,
               train_data_loader,test_data_loader=None,
