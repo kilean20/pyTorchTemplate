@@ -276,11 +276,11 @@ class resFCNN_VAE():
         self.model = self.model.to(device)
         
     
-    def loss_function(self, y_true, y_pred_lists, mu, logvar, batch_size, weight_mu=1, weight_sigma=1, weight_KLD=1, nSmaple=1):
+    def loss_function(self, y_true, y_pred_lists, mu, logvar, batch_size, weight_mu=1, weight_sigma=1, weight_KLD=1, nsample=1):
         BCE = torch.nn.functional.mse_loss(y_pred_lists[0], y_true)
-        for i in range(nSample-1):
+        for i in range(nsample-1):
             BCE = BCE + torch.nn.functional.mse_loss(y_pred_lists[i+1], y_true)
-        BCE = BCE/nSample
+        BCE = BCE/nsample
 
         KLD = -0.5 * torch.sum(1 + weight_sigma*(logvar -logvar.exp()) -weight_mu*mu.pow(2) )
         KLD /= batch_size
@@ -338,7 +338,7 @@ class resFCNN_VAE():
                 mu = self.model.Mu(x)
                 logvar = self.model.LogVar(x)
                 y_pred = []
-                for i in range(nSample):
+                for i in range(nsample):
                     z = self.model.reparameterize(mu, logvar)
                     y_pred.append(self.model.decoder(z))
                     loss = self.loss_function(y, y_pred, mu, logvar, 
@@ -373,7 +373,7 @@ class resFCNN_VAE():
                         mu = self.model.Mu(x)
                         logvar = self.model.LogVar(x)
                         y_pred = []
-                        for i in range(nSample):
+                        for i in range(nsample):
                             z = self.model.reparameterize(mu, logvar)
                             y_pred.append(self.model.decoder(z))
                             loss = self.loss_function(y, y_pred, mu, logvar, 
