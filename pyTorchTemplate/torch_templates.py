@@ -348,7 +348,7 @@ class resFCNN_VAE():
                     z = self.model.reparameterize(mu, logvar)
                     y_pred.append(self.model.decoder(z))
                     loss = self.loss_function(y, y_pred, mu, logvar, 
-                                              batch_size, weight_mu, weight_sigma, weight_KLD, nSmaple)
+                                              batch_size, weight_mu, weight_sigma, weight_KLD, nsample)
                 loss.backward()
                 opt.step()
                 train_loss += loss.item()
