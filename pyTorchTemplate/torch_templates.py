@@ -303,7 +303,7 @@ class resFCNN_VAE():
               supervised = False):
         
     
-        opt = torch.optim.Adam(self.model.parameters(filter(lambda p: p.requires_grad, model.parameters())),lr=lr)
+        opt = torch.optim.Adam(self.model.parameters(filter(lambda p: p.requires_grad, self.model.parameters())),lr=lr)
 
         if old_hist == None:
             old_hist ={'train_loss':[],'test_loss' :[]}
