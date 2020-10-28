@@ -300,6 +300,7 @@ class resFCNN_VAE():
                 else:
                     x=data
                     y=x
+                batch_size = len(y)
                 x = x.to(device)
                 y = y.to(device)
 
