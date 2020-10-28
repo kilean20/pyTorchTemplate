@@ -288,6 +288,39 @@ class resFCNN_VAE():
         return BCE + weight_KLD*KLD
     
     
+    def validate(self, data_loader, supervised = False, weight_mu=1, weight_sigma=1, weight_KLD=1):
+        self.model.eval()
+        test_loss = 0
+        with torch.no_grad():
+            for data in data_loader:
+                if supervised:
+                    x=data[0]
+                    y=data[1]
+                else:
+                    x=data
+                    y=x
+
+                x = x.to(device)
+                y = y.to(device)
+
+                x = self.model.encoder(x)
+                mu = self.model.Mu(x)
+                logvar = self.model.LogVar(x)
+                y_pred = []
+                if nsample==1:
+                    z = mu
+                    y_pred.append(self.model.decoder(z))
+                    loss = self.loss_function(y, y_pred, mu, logvar, 
+                                              batch_size, weight_mu, weight_sigma, weight_KLD, nsample)
+                    test_loss += loss.item()
+                else:
+                    for i in range(nsample):
+                        z = self.model.reparameterize(mu, logvar)
+                        y_pred.append(self.model.decoder(z))
+                        loss = self.loss_function(y, y_pred, mu, logvar, 
+                                                  batch_size, weight_mu, weight_sigma, weight_KLD, nsample)
+                        test_loss += loss.item()
+        test_loss /= len(test_data_loader)
     
     def train(self,lr,epochs,
               train_data_loader,test_data_loader=None,
@@ -325,16 +358,11 @@ class resFCNN_VAE():
             train_loss = 0
             for data in train_data_loader:
                 if supervised:
-#                     print('data')
-#                     print(data)
-#                     print('len(data)',len(data))
                     x=data[0]
                     y=data[1]
                 else:
                     x=data
                     y=x
-#                 print('len(x)',len(x))
-#                 print('len(y)',len(y))
                 batch_size = len(y)
                 opt.zero_grad()
                 x = x.to(device)
@@ -381,7 +409,7 @@ class resFCNN_VAE():
                             z = self.model.reparameterize(mu, logvar)
                             y_pred.append(self.model.decoder(z))
                             loss = self.loss_function(y, y_pred, mu, logvar, 
-                                                      batch_size, weight_mu, weight_sigma, weight_KLD, nSmaple)
+                                                      batch_size, weight_mu, weight_sigma, weight_KLD, nsample)
 
                         test_loss += loss.item()
                 test_loss /= len(test_data_loader)
