@@ -324,12 +324,16 @@ class resFCNN_VAE():
             train_loss = 0
             for data in train_data_loader:
                 if supervised:
+                    print('data')
+                    print(data)
+                    print('len(data)',len(data))
                     x=data[0]
                     y=data[1]
                 else:
                     x=data
                     y=x
-                    
+                print('len(x)',len(x))
+                print('len(y)',len(y))
                 opt.zero_grad()
                 x = x.to(device)
                 y = y.to(device)
@@ -357,8 +361,6 @@ class resFCNN_VAE():
                 test_loss = 0
                 with torch.no_grad():
                     for data in test_data_loader:
-                        print('data')
-                        print(data)
                         if supervised:
                             x=data[0]
                             y=data[1]
