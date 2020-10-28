@@ -281,7 +281,7 @@ class _resFCNN_VAE(torch.nn.Module):
     
     
 class resFCNN_VAE():
-    def __init__(self, encoder_nodes, decoder_nodes, activation, dropout_p=0.0, res_trainable=True, res_initZeros=False, identity_block_every_layer=True):
+    def __init__(self, encoder_nodes, decoder_nodes, activation=torch.nn.ReLU(), dropout_p=0.0, res_trainable=True, res_initZeros=False, identity_block_every_layer=True):
         self.model = _resFCNN_VAE(encoder_nodes, decoder_nodes, activation, dropout_p, res_trainable, res_initZeros, identity_block_every_layer)        
         self.model = self.model.to(device)
         
