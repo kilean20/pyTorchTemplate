@@ -4,6 +4,7 @@ from torch.nn import functional as F
 import pickle
 from copy import deepcopy as copy
 from IPython.display import display, clear_output
+from math import ceil
   
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # def set_num_threads(n):
@@ -43,7 +44,7 @@ def FCNN(nodes, activation=torch.nn.ReLU(), dropout_p=0.0):
 
 
 class FCNN_IdentityBlock(torch.nn.Module):
-    def __init__(self, inout_feature, nodes, activation, dropout_p=0.0, trainable=False, initZeros=True):
+    def __init__(self, inout_feature, nodes, activation, dropout_p=0.0, trainable=True, initZeros=False):
         super(FCNN_IdentityBlock, self).__init__()
         
         self.nodes = nodes
@@ -80,7 +81,7 @@ class FCNN_IdentityBlock(torch.nn.Module):
     
     
 class Linear_wResidualBlock(torch.nn.Module):
-    def __init__(self, nodes, activation, dropout_p=0.0, trainable=False, initZeros=True):
+    def __init__(self, nodes, activation, dropout_p=0.0, trainable=True, initZeros=False):
         super(Linear_wResidualBlock, self).__init__()
         
         self.seq = []
@@ -115,13 +116,14 @@ class Linear_wResidualBlock(torch.nn.Module):
     
     
 class _resFCNN(torch.nn.Module):
-    def __init__(self, nodes, activation, dropout_p=0.0, res_trainable=False, res_initZeros=True, identity_block_every_layer=True):
+    def __init__(self, nodes, activation, dropout_p=0.0, res_trainable=True, res_initZeros=False, identity_block_every_layer=True):
         super(_resFCNN, self).__init__()
         
         
         self.seq = []
         for i in range(len(nodes)-2):
-            temp_nodes = [nodes[i],min(nodes[i],nodes[i+1]),min(nodes[i],nodes[i+1]),nodes[i+1]]
+            bw = ceil(0.5*(nodes[i]+nodes[i+1]))
+            temp_nodes = [nodes[i],bw,bw,nodes[i+1]]
             self.seq.append(Linear_wResidualBlock(temp_nodes,activation,dropout_p,res_trainable,res_initZeros))
             if identity_block_every_layer:
                 temp_nodes = [nodes[i+1],nodes[i+1]]
@@ -134,21 +136,22 @@ class _resFCNN(torch.nn.Module):
         return self.nn(x)
 
     
-def resFCNN(nodes, activation=torch.nn.ReLU(), dropout_p=0.0, res_trainable=False, res_initZeros=True, identity_block_every_layer=True):
+def resFCNN(nodes, activation=torch.nn.ReLU(), dropout_p=0.0, res_trainable=True, res_initZeros=False, identity_block_every_layer=True):
     model = _resFCNN(nodes,activation,dropout_p,res_trainable,res_initZeros).to(device)
     return model
 
 
 
 class _resFCNN_autoEncoder(torch.nn.Module):
-    def __init__(self, encoder_nodes, decoder_nodes, activation, dropout_p=0.0, res_trainable=False, res_initZeros=True, identity_block_every_layer=True):
+    def __init__(self, encoder_nodes, decoder_nodes, activation, dropout_p=0.0, res_trainable=True, res_initZeros=False, identity_block_every_layer=True):
         super(_resFCNN_autoEncoder, self).__init__()
         
         assert encoder_nodes[-1]==decoder_nodes[0]
         
         seq = []
         for i in range(len(encoder_nodes)-2):
-            temp_encoder_nodes = [encoder_nodes[i],min(encoder_nodes[i],encoder_nodes[i+1]),min(encoder_nodes[i],encoder_nodes[i+1]),encoder_nodes[i+1]]
+            bw = ceil(0.5*(encoder_nodes[i]+encoder_nodes[i+1]))
+            temp_encoder_nodes = [encoder_nodes[i],bw,bw,encoder_nodes[i+1]]
             seq.append(Linear_wResidualBlock(temp_encoder_nodes,activation,dropout_p,res_trainable,res_initZeros))
             if identity_block_every_layer:
                 temp_encoder_nodes = [encoder_nodes[i+1],encoder_nodes[i+1]]
@@ -160,7 +163,8 @@ class _resFCNN_autoEncoder(torch.nn.Module):
         
         seq = []
         for i in range(len(decoder_nodes)-2):
-            temp_decoder_nodes = [decoder_nodes[i],min(decoder_nodes[i],decoder_nodes[i+1]),min(decoder_nodes[i],decoder_nodes[i+1]),decoder_nodes[i+1]]
+            bw = ceil(0.5*(decoder_nodes[i]+decoder_nodes[i+1]))
+            temp_decoder_nodes = [decoder_nodes[i],bw,bw,decoder_nodes[i+1]]
             seq.append(Linear_wResidualBlock(temp_decoder_nodes,activation,dropout_p,res_trainable,res_initZeros))
             if identity_block_every_layer:
                 temp_decoder_nodes = [decoder_nodes[i+1],decoder_nodes[i+1]]
@@ -176,9 +180,259 @@ class _resFCNN_autoEncoder(torch.nn.Module):
         return self.encoder(x)
 
 
-def resFCNN_autoEncoder(encoder_nodes,decoder_nodes, activation=torch.nn.ReLU(), dropout_p=0.0, res_trainable=False, res_initZeros=True, identity_block_every_layer=True):
+def resFCNN_autoEncoder(encoder_nodes,decoder_nodes, activation=torch.nn.ReLU(), dropout_p=0.0, res_trainable=True, res_initZeros=False, identity_block_every_layer=True):
     model = _resFCNN_autoEncoder(encoder_nodes,decoder_nodes,activation,dropout_p,res_trainable,res_initZeros).to(device)
     return model
+
+
+
+class _resFCNN_VAE(torch.nn.Module):
+    def __init__(self, encoder_nodes, decoder_nodes, activation, dropout_p=0.0, res_trainable=True, res_initZeros=False, identity_block_every_layer=True):
+        super(_resFCNN_VAE, self).__init__()
+        self.sample = 1
+        
+        assert encoder_nodes[-1]==decoder_nodes[0]
+        
+        seq = []
+        for i in range(len(encoder_nodes)-3):
+            bw = ceil(0.5*(encoder_nodes[i]+encoder_nodes[i+1]))
+            temp_encoder_nodes = [encoder_nodes[i],bw,bw,encoder_nodes[i+1]]
+            seq.append(Linear_wResidualBlock(temp_encoder_nodes,activation,dropout_p,res_trainable,res_initZeros))
+            if identity_block_every_layer:
+                temp_encoder_nodes = [encoder_nodes[i+1],encoder_nodes[i+1]]
+                seq.append(FCNN_IdentityBlock(encoder_nodes[i+1],temp_encoder_nodes,activation,dropout_p,res_trainable,res_initZeros))
+        self.encoder = torch.nn.Sequential(*seq)
+          
+            
+        temp_encoder_nodes = [encoder_nodes[-3],encoder_nodes[-2]]                
+        seq = [Linear_wResidualBlock(temp_encoder_nodes,activation,dropout_p,res_trainable,res_initZeros)]
+        if identity_block_every_layer:
+            temp_encoder_nodes = [encoder_nodes[-2], encoder_nodes[-2]]
+            seq.append(FCNN_IdentityBlock(encoder_nodes[-2],temp_encoder_nodes,activation,dropout_p,res_trainable,res_initZeros))
+        seq.append(torch.nn.Linear(encoder_nodes[-2],encoder_nodes[-1]))
+        self.Mu = torch.nn.Sequential(*seq)
+        self.Mu[-1].weight.data.fill_(0.0)
+        self.Mu[-1].bias.data.fill_(0.0)
+        
+        
+        temp_encoder_nodes = [encoder_nodes[-3],encoder_nodes[-2]]                
+        seq = [Linear_wResidualBlock(temp_encoder_nodes,activation,dropout_p,res_trainable,res_initZeros)]
+        if identity_block_every_layer:
+            temp_encoder_nodes = [encoder_nodes[-2], encoder_nodes[-2]]
+            seq.append(FCNN_IdentityBlock(encoder_nodes[-2],temp_encoder_nodes,activation,dropout_p,res_trainable,res_initZeros))
+        seq.append(torch.nn.Linear(encoder_nodes[-2],encoder_nodes[-1]))
+        self.LogVar = torch.nn.Sequential(*seq)
+        self.LogVar[-1].weight.data.fill_(0.0)
+        self.LogVar[-1].bias.data.fill_(0.0)
+
+                
+        
+        seq = []
+        for i in range(len(decoder_nodes)-2):
+            bw = ceil(0.5*(decoder_nodes[i]+decoder_nodes[i+1]))
+            temp_decoder_nodes = [decoder_nodes[i],bw,bw,decoder_nodes[i+1]]
+            seq.append(Linear_wResidualBlock(temp_decoder_nodes,activation,dropout_p,res_trainable,res_initZeros))
+            if identity_block_every_layer:
+                temp_decoder_nodes = [decoder_nodes[i+1],decoder_nodes[i+1]]
+                seq.append(FCNN_IdentityBlock(decoder_nodes[i+1],temp_decoder_nodes,activation,dropout_p,res_trainable,res_initZeros))
+               
+        seq.append(torch.nn.Linear(decoder_nodes[-2],decoder_nodes[-1]))
+        self.decoder = torch.nn.Sequential(*seq)
+        
+        
+    def reparameterize(self, mu, logvar):
+        if self.training:
+            std = logvar.mul(0.5).exp_()  # type: Variable
+            eps = Variable(std.data.new(std.size()).normal_())
+            return eps.mul(std).add_(mu)
+
+        else:
+            return mu
+        
+    def forward(self, x):
+        x = self.encoder(x)
+#         mu = torch.clamp(self.Mu(x), min=-1000.0,max=1000.0)
+#         logvar = torch.clamp(self.LogVar(x), min=-10.0,max=10.0)
+        mu = self.Mu(x)
+        logvar = self.LogVar(x)
+        z = self.reparameterize(mu, logvar)
+        return self.decoder(z), mu, logvar
+    
+    
+    def get_z(self, x):
+        x = self.encoder(x)
+#         mu = torch.clamp(self.Mu(x), min=-1000.0,max=1000.0)
+#         logvar = torch.clamp(self.LogVar(x), min=-10.0,max=10.0)
+        mu = self.Mu(x)
+        logvar = self.LogVar(x)
+        return self.reparameterize(mu, logvar)
+    
+    
+    def loss_function(self, y_true, y_pred_lists, mu, logvar, batch_size, weight_mu=1, weight_sigma=1, weight_KLD=1, nSmaple=1):
+        BCE = torch.nn.functional.mse_loss(y_pred_lists[0], y_true)
+        for i in range(nSample-1):
+            BCE = BCE + torch.nn.functional.mse_loss(y_pred_lists[i+1], y_true)
+        BCE = BCE/nSample
+
+        KLD = -0.5 * torch.sum(1 + weight_sigma*(logvar -logvar.exp()) -weight_mu*mu.pow(2) )
+        KLD /= batch_size
+
+        return BCE + weight_KLD*KLD
+    
+    
+class resFCNN_VAE():
+    def __init__(self, encoder_nodes, decoder_nodes, activation, dropout_p=0.0, res_trainable=True, res_initZeros=False, identity_block_every_layer=True):
+        self.model = _resFCNN_VAE(encoder_nodes, decoder_nodes, activation, dropout_p, res_trainable, res_initZeros, identity_block_every_layer)        
+        self.model = self.model.to(device)
+        
+    
+    
+    def train(self,lr,epochs,
+              train_data_loader,test_data_loader=None,
+              optimizer=torch.optim.Adam,
+              nsample = 1,
+              fname = None,
+              old_hist = None,
+              old_best_loss = None,
+              dispHead = 10,
+              dispTail = 10,
+              flagEvalMode = False,
+              args = None,
+              supervised = False):
+        
+    
+        opt = torch.optim.Adam(model.parameters(filter(lambda p: p.requires_grad, model.parameters())),lr=lr)
+
+        if old_hist == None:
+            old_hist ={'train_loss':[],'test_loss' :[]}
+
+        old_epochs = len(old_hist['train_loss'])
+        hist = {'train_loss':np.zeros(old_epochs+epochs)}
+
+        hist['train_loss'][:old_epochs] = old_hist['train_loss'][:]
+        if 'test_loss' in old_hist:
+            hist['test_loss'] = np.zeros(old_epochs+epochs)
+            hist['test_loss'][:old_epochs] = old_hist['test_loss' ][:]
+
+        for epoch in range(epochs):
+            if flagEvalMode:
+                model.eval()
+            else:
+                model.train()
+            train_loss = 0
+            for data in train_data_loader:
+                if supervised:
+                    x=data[0]
+                    y=data[1]
+                else:
+                    x=data
+                    y=x
+                    
+                opt.zero_grad()
+                x = x.to(device)
+                y = y.to(device)
+
+                x = model.encoder(x)
+                mu = model.Mu(x)
+                logvar = model.LogVar(x)
+                y_pred = []
+                for i in range(nSample):
+                    z = model.reparameterize(mu, logvar)
+                    y_pred.append(model.decoder(z))
+                    loss = self.loss_function(y, y_pred, mu, logvar, 
+                                              batch_size, weight_mu, weight_sigma, weight_KLD, nSmaple)
+                loss.backward()
+                opt.step()
+                train_loss += loss.item()
+            train_loss /= len(train_data_loader)
+            hist['train_loss'][old_epochs+epoch] = train_loss
+
+
+            if test_data_loader == None:
+                test_loss = train_loss
+            else:
+                model.eval()
+                test_loss = 0
+                with torch.no_grad():
+                    for data in test_data_loader:
+                        if supervised:
+                            x=data[0]
+                            y=data[1]
+                        else:
+                            x=data
+                            y=x
+
+                        x = x.to(device)
+                        y = y.to(device)
+
+                        x = model.encoder(x)
+                        mu = model.Mu(x)
+                        logvar = model.LogVar(x)
+                        y_pred = []
+                        for i in range(nSample):
+                            z = model.reparameterize(mu, logvar)
+                            y_pred.append(model.decoder(z))
+                            loss = self.loss_function(y, y_pred, mu, logvar, 
+                                                      batch_size, weight_mu, weight_sigma, weight_KLD, nSmaple)
+
+                        test_loss += loss.item()
+                test_loss /= len(test_data_loader)
+                hist['test_loss' ][old_epochs+epoch] = test_loss
+
+
+            flag_best = False
+            if old_best_loss != None:
+                if test_loss < old_best_loss:
+                    flag_best = True
+                    old_best_loss = test_loss
+                    checkpoint = {'epoch':old_epochs+epoch, 
+                                  'model':model,
+                                  'model_state_dict':model.state_dict(), 
+                                  'optimizer':opt,
+                                  'optimizer_state_dict':opt.state_dict()}
+                    if fname!=None:
+                        torch.save(checkpoint, fname + '_best.checkpoint')
+                    else:
+                        torch.save(checkpoint, '_best.checkpoint')
+
+
+            # display the epoch training loss
+            if epoch < dispHead  or epoch >= epochs -dispTail:
+                end = '\n'
+            else:
+                end = '\r'
+            if test_data_loader != None:
+                print("epoch : {}/{}, train loss = {:.6f}, test loss = {:.6f}".format(
+                      old_epochs +epoch, old_epochs +epochs, 
+                      hist['train_loss'][old_epochs +epoch], 
+                      hist['test_loss'][old_epochs +epoch]), end=end)
+            else:
+                print("epoch : {}/{}, train loss = {:.6f}".format(
+                      old_epochs +epoch, old_epochs +epochs, 
+                      hist['train_loss'][old_epochs +epoch]), end=end)
+
+
+
+        checkpoint = {'epoch':old_epochs+epoch, 
+                      'model':model,
+                      'model_state_dict':model.state_dict(), 
+                      'optimizer':opt,
+                      'optimizer_state_dict':opt.state_dict()}
+        if fname!=None:
+            torch.save(checkpoint, fname + '_trainingEnd.checkpoint')
+
+
+
+        if old_best_loss !=None and flag_best:
+            if fname!=None:
+                checkpoint = torch.load(fname + '_best.checkpoint')
+            else:
+                checkpoint = torch.load('_best.checkpoint')
+            model.load_state_dict(checkpoint['model_state_dict'])
+
+
+        return hist
+
     
 ####################################
 ## Loss
