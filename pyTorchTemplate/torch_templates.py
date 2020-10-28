@@ -357,6 +357,8 @@ class resFCNN_VAE():
                 test_loss = 0
                 with torch.no_grad():
                     for data in test_data_loader:
+                        print('data')
+                        print(data)
                         if supervised:
                             x=data[0]
                             y=data[1]
