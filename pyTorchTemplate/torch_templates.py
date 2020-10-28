@@ -323,7 +323,7 @@ class resFCNN_VAE():
                                                   batch_size, weight_mu, weight_sigma, weight_KLD, nsample)
                         test_loss += loss.item()
         test_loss /= len(data_loader)
-        
+        return test_loss
         
     
     def train(self,lr,epochs,
