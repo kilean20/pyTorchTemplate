@@ -242,8 +242,8 @@ class _resFCNN_VAE(torch.nn.Module):
         
     def reparameterize(self, mu, logvar):
         if self.training:
-            std = logvar.mul(0.5).exp_()  # type: Variable
-            eps = Variable(std.data.new(std.size()).normal_())
+            std = logvar.mul(0.5).exp_()  
+            eps = std.data.new(std.size()).normal_()
             return eps.mul(std).add_(mu)
 
         else:
