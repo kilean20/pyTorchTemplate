@@ -271,9 +271,10 @@ class _resFCNN_VAE(torch.nn.Module):
 
     
 class resFCNN_VAE():
-    def __init__(self, encoder_nodes, decoder_nodes, activation=torch.nn.ReLU(), dropout_p=0.0, res_trainable=True, res_initZeros=False, identity_block_every_layer=True):
+    def __init__(self, encoder_nodes, decoder_nodes, activation=torch.nn.ReLU(), dropout_p=0.0, res_trainable=True, res_initZeros=False, identity_block_every_layer=True, supervised=False):
         self.model = _resFCNN_VAE(encoder_nodes, decoder_nodes, activation, dropout_p, res_trainable, res_initZeros, identity_block_every_layer)        
         self.model = self.model.to(device)
+        self.supervised = supervised
         
     
     def loss_function(self, y_true, y_pred_lists, mu, logvar, batch_size, weight_mu=1, weight_sigma=1, weight_KLD=1, nsample=1):
@@ -288,18 +289,17 @@ class resFCNN_VAE():
         return BCE + weight_KLD*KLD
     
     
-    def validate(self, data_loader, supervised = False, weight_mu=1, weight_sigma=1, weight_KLD=1):
+    def validate(self, data_loader, weight_mu=1, weight_sigma=1, weight_KLD=1):
         self.model.eval()
         test_loss = 0
         with torch.no_grad():
             for data in data_loader:
-                if supervised:
+                if self.supervised:
                     x=data[0]
                     y=data[1]
                 else:
                     x=data
                     y=x
-
                 x = x.to(device)
                 y = y.to(device)
 
@@ -332,7 +332,6 @@ class resFCNN_VAE():
               dispTail = 10,
               flagEvalMode = False,
               args = None,
-              supervised = False,
               nsample = 1,
               weight_mu=1, weight_sigma=1, weight_KLD=1):
         
@@ -357,7 +356,7 @@ class resFCNN_VAE():
                 self.model.train()
             train_loss = 0
             for data in train_data_loader:
-                if supervised:
+                if self.supervised:
                     x=data[0]
                     y=data[1]
                 else:
@@ -391,7 +390,7 @@ class resFCNN_VAE():
                 test_loss = 0
                 with torch.no_grad():
                     for data in test_data_loader:
-                        if supervised:
+                        if self.supervised:
                             x=data[0]
                             y=data[1]
                         else:
