@@ -292,7 +292,6 @@ class resFCNN_VAE():
     def train(self,lr,epochs,
               train_data_loader,test_data_loader=None,
               optimizer=torch.optim.Adam,
-              nsample = 1,
               fname = None,
               old_hist = None,
               old_best_loss = None,
@@ -300,7 +299,9 @@ class resFCNN_VAE():
               dispTail = 10,
               flagEvalMode = False,
               args = None,
-              supervised = False):
+              supervised = False,
+              nsample = 1,
+              weight_mu=1, weight_sigma=1, weight_KLD=1):
         
     
         opt = torch.optim.Adam(self.model.parameters(filter(lambda p: p.requires_grad, self.model.parameters())),lr=lr)
