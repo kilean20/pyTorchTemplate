@@ -268,6 +268,14 @@ class _resFCNN_VAE(torch.nn.Module):
         return self.reparameterize(mu, logvar)
     
     
+
+    
+class resFCNN_VAE():
+    def __init__(self, encoder_nodes, decoder_nodes, activation=torch.nn.ReLU(), dropout_p=0.0, res_trainable=True, res_initZeros=False, identity_block_every_layer=True):
+        self.model = _resFCNN_VAE(encoder_nodes, decoder_nodes, activation, dropout_p, res_trainable, res_initZeros, identity_block_every_layer)        
+        self.model = self.model.to(device)
+        
+    
     def loss_function(self, y_true, y_pred_lists, mu, logvar, batch_size, weight_mu=1, weight_sigma=1, weight_KLD=1, nSmaple=1):
         BCE = torch.nn.functional.mse_loss(y_pred_lists[0], y_true)
         for i in range(nSample-1):
@@ -279,12 +287,6 @@ class _resFCNN_VAE(torch.nn.Module):
 
         return BCE + weight_KLD*KLD
     
-    
-class resFCNN_VAE():
-    def __init__(self, encoder_nodes, decoder_nodes, activation=torch.nn.ReLU(), dropout_p=0.0, res_trainable=True, res_initZeros=False, identity_block_every_layer=True):
-        self.model = _resFCNN_VAE(encoder_nodes, decoder_nodes, activation, dropout_p, res_trainable, res_initZeros, identity_block_every_layer)        
-        self.model = self.model.to(device)
-        
     
     
     def train(self,lr,epochs,
@@ -301,7 +303,7 @@ class resFCNN_VAE():
               supervised = False):
         
     
-        opt = torch.optim.Adam(model.parameters(filter(lambda p: p.requires_grad, model.parameters())),lr=lr)
+        opt = torch.optim.Adam(self.model.parameters(filter(lambda p: p.requires_grad, model.parameters())),lr=lr)
 
         if old_hist == None:
             old_hist ={'train_loss':[],'test_loss' :[]}
@@ -316,9 +318,9 @@ class resFCNN_VAE():
 
         for epoch in range(epochs):
             if flagEvalMode:
-                model.eval()
+                self.model.eval()
             else:
-                model.train()
+                self.model.train()
             train_loss = 0
             for data in train_data_loader:
                 if supervised:
@@ -332,13 +334,13 @@ class resFCNN_VAE():
                 x = x.to(device)
                 y = y.to(device)
 
-                x = model.encoder(x)
-                mu = model.Mu(x)
-                logvar = model.LogVar(x)
+                x = self.model.encoder(x)
+                mu = self.model.Mu(x)
+                logvar = self.model.LogVar(x)
                 y_pred = []
                 for i in range(nSample):
-                    z = model.reparameterize(mu, logvar)
-                    y_pred.append(model.decoder(z))
+                    z = self.model.reparameterize(mu, logvar)
+                    y_pred.append(self.model.decoder(z))
                     loss = self.loss_function(y, y_pred, mu, logvar, 
                                               batch_size, weight_mu, weight_sigma, weight_KLD, nSmaple)
                 loss.backward()
@@ -351,7 +353,7 @@ class resFCNN_VAE():
             if test_data_loader == None:
                 test_loss = train_loss
             else:
-                model.eval()
+                self.model.eval()
                 test_loss = 0
                 with torch.no_grad():
                     for data in test_data_loader:
@@ -365,13 +367,13 @@ class resFCNN_VAE():
                         x = x.to(device)
                         y = y.to(device)
 
-                        x = model.encoder(x)
-                        mu = model.Mu(x)
-                        logvar = model.LogVar(x)
+                        x = self.model.encoder(x)
+                        mu = self.model.Mu(x)
+                        logvar = self.model.LogVar(x)
                         y_pred = []
                         for i in range(nSample):
-                            z = model.reparameterize(mu, logvar)
-                            y_pred.append(model.decoder(z))
+                            z = self.model.reparameterize(mu, logvar)
+                            y_pred.append(self.model.decoder(z))
                             loss = self.loss_function(y, y_pred, mu, logvar, 
                                                       batch_size, weight_mu, weight_sigma, weight_KLD, nSmaple)
 
@@ -386,8 +388,8 @@ class resFCNN_VAE():
                     flag_best = True
                     old_best_loss = test_loss
                     checkpoint = {'epoch':old_epochs+epoch, 
-                                  'model':model,
-                                  'model_state_dict':model.state_dict(), 
+                                  'model':self.model,
+                                  'model_state_dict':self.model.state_dict(), 
                                   'optimizer':opt,
                                   'optimizer_state_dict':opt.state_dict()}
                     if fname!=None:
@@ -414,8 +416,8 @@ class resFCNN_VAE():
 
 
         checkpoint = {'epoch':old_epochs+epoch, 
-                      'model':model,
-                      'model_state_dict':model.state_dict(), 
+                      'model':self.model,
+                      'model_state_dict':self.model.state_dict(), 
                       'optimizer':opt,
                       'optimizer_state_dict':opt.state_dict()}
         if fname!=None:
@@ -428,7 +430,7 @@ class resFCNN_VAE():
                 checkpoint = torch.load(fname + '_best.checkpoint')
             else:
                 checkpoint = torch.load('_best.checkpoint')
-            model.load_state_dict(checkpoint['model_state_dict'])
+            self.model.load_state_dict(checkpoint['model_state_dict'])
 
 
         return hist
