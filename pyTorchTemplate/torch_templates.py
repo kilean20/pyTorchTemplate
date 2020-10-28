@@ -289,7 +289,7 @@ class resFCNN_VAE():
         return BCE + weight_KLD*KLD
     
     
-    def validate(self, data_loader, weight_mu=1, weight_sigma=1, weight_KLD=1):
+    def validate(self, data_loader, weight_mu=1, weight_sigma=1, weight_KLD=1, nsample=1):
         self.model.eval()
         test_loss = 0
         with torch.no_grad():
