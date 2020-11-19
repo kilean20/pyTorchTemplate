@@ -298,8 +298,8 @@ class resFCNN_VAE():
                 if self.supervised:
                     x=data[0]
                     y=data[1]
-                                    x = x.to(device)
-                y = y.to(device)
+                    x = x.to(device)
+                    y = y.to(device)
                 else:
                     x = data
                     x = x.to(device)
