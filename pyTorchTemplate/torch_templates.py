@@ -187,9 +187,9 @@ def resFCNN_autoEncoder(encoder_nodes,decoder_nodes, activation=torch.nn.ReLU(),
 
 
 class _resFCNN_VAE(torch.nn.Module):
-    def __init__(self, encoder_nodes, decoder_nodes, activation, dropout_p=0.0, res_trainable=True, res_initZeros=False, identity_block_every_layer=True):
+    def __init__(self, encoder_nodes, decoder_nodes, activation, dropout_p=0.0, res_trainable=True, res_initZeros=False, identity_block_every_layer=True):# sample = 1):
         super(_resFCNN_VAE, self).__init__()
-        self.sample = 1
+#         self.sample = sample
         
         assert encoder_nodes[-1]==decoder_nodes[0]
         
@@ -251,10 +251,10 @@ class _resFCNN_VAE(torch.nn.Module):
         
     def forward(self, x):
         x = self.encoder(x)
-#         mu = torch.clamp(self.Mu(x), min=-1000.0,max=1000.0)
-#         logvar = torch.clamp(self.LogVar(x), min=-10.0,max=10.0)
-        mu = self.Mu(x)
-        logvar = self.LogVar(x)
+        mu = torch.clamp(self.Mu(x), min=-1000.0,max=1000.0)
+        logvar = torch.clamp(self.LogVar(x), min=-10.0,max=10.0)
+#         mu = self.Mu(x)
+#         logvar = self.LogVar(x)
         z = self.reparameterize(mu, logvar)
         return self.decoder(z), mu, logvar
     
@@ -263,8 +263,8 @@ class _resFCNN_VAE(torch.nn.Module):
         x = self.encoder(x)
 #         mu = torch.clamp(self.Mu(x), min=-1000.0,max=1000.0)
 #         logvar = torch.clamp(self.LogVar(x), min=-10.0,max=10.0)
-        mu = self.Mu(x)
-        logvar = self.LogVar(x)
+        mu = torch.clamp(self.Mu(x), min=-1000.0,max=1000.0)
+        logvar = torch.clamp(self.LogVar(x), min=-10.0,max=10.0)
         return self.reparameterize(mu, logvar)
     
     
@@ -298,16 +298,18 @@ class resFCNN_VAE():
                 if self.supervised:
                     x=data[0]
                     y=data[1]
-                else:
-                    x=data
-                    y=x
-                batch_size = len(y)
-                x = x.to(device)
+                                    x = x.to(device)
                 y = y.to(device)
+                else:
+                    x = data
+                    x = x.to(device)
+                    y = x
+                batch_size = len(y)
+
 
                 x = self.model.encoder(x)
-                mu = self.model.Mu(x)
-                logvar = self.model.LogVar(x)
+                mu = torch.clamp(self.model.Mu(x), min=-1000.0,max=1000.0)                
+                logvar = torch.clamp(self.model.LogVar(x), min=-10.0,max=10.0)
                 y_pred = []
                 if nsample==1:
                     z = mu
@@ -361,19 +363,20 @@ class resFCNN_VAE():
             train_loss = 0
             for data in train_data_loader:
                 if self.supervised:
-                    x=data[0]
-                    y=data[1]
+                    x = data[0]
+                    y = data[1]
+                    x = x.to(device)
+                    y = y.to(device)
                 else:
-                    x=data
-                    y=x
+                    x = data
+                    x = x.to(device)
+                    y = x
                 batch_size = len(y)
                 opt.zero_grad()
-                x = x.to(device)
-                y = y.to(device)
 
                 x = self.model.encoder(x)
-                mu = self.model.Mu(x)
-                logvar = self.model.LogVar(x)
+                mu = torch.clamp(self.model.Mu(x), min=-1000.0,max=1000.0)                
+                logvar = torch.clamp(self.model.LogVar(x), min=-10.0,max=10.0)
                 y_pred = []
                 for i in range(nsample):
                     z = self.model.reparameterize(mu, logvar)
