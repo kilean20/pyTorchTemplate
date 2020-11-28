@@ -117,7 +117,7 @@ class Linear_wResidualBlock(torch.nn.Module):
     
     
 class _resFCNN(torch.nn.Module):
-    def __init__(self, nodes, activation, dropout_p=0.0, res_trainable=True, res_initZeros=False, identity_block_every_layer=True, residual=True):
+    def __init__(self, nodes, activation, dropout_p=0.0, res_trainable=True, res_initZeros=False, identity_block_every_layer=True):
         super(_resFCNN, self).__init__()
         
         
@@ -125,10 +125,7 @@ class _resFCNN(torch.nn.Module):
         for i in range(len(nodes)-2):
             bw = ceil(0.5*(nodes[i]+nodes[i+1]))
             temp_nodes = [nodes[i],bw,bw,nodes[i+1]]
-            if residual:
-                self.seq.append(Linear_wResidualBlock(temp_nodes,activation,dropout_p,res_trainable,res_initZeros))
-            else:
-                self.seq.append(torch.nn.Linear(nodes[i],nodes[i+1]), torch.nn.Dropout(dropout_p), activation)
+            self.seq.append(Linear_wResidualBlock(temp_nodes,activation,dropout_p,res_trainable,res_initZeros))
             if identity_block_every_layer:
                 temp_nodes = [nodes[i+1],nodes[i+1]]
                 self.seq.append(FCNN_IdentityBlock(nodes[i+1],temp_nodes,activation,dropout_p,res_trainable,res_initZeros))
@@ -140,14 +137,14 @@ class _resFCNN(torch.nn.Module):
         return self.nn(x)
 
     
-def resFCNN(nodes, activation=torch.nn.ReLU(), dropout_p=0.0, res_trainable=True, res_initZeros=False, identity_block_every_layer=True, residual=True):
+def resFCNN(nodes, activation=torch.nn.ReLU(), dropout_p=0.0, res_trainable=True, res_initZeros=False, identity_block_every_layer=True):
     model = _resFCNN(nodes,activation,dropout_p,res_trainable,res_initZeros,identity_block_every_layer,residual).to(device)
     return model
 
 
 
 class _resFCNN_autoEncoder(torch.nn.Module):
-    def __init__(self, encoder_nodes, decoder_nodes, activation, dropout_p=0.0, res_trainable=True, res_initZeros=False, identity_block_every_layer=True):
+    def __init__(self, encoder_nodes, decoder_nodes, activation, dropout_p=0.0, res_trainable=True, res_initZeros=False, identity_block_every_layer=True, residual=True):
         super(_resFCNN_autoEncoder, self).__init__()
         
         assert encoder_nodes[-1]==decoder_nodes[0]
@@ -156,7 +153,11 @@ class _resFCNN_autoEncoder(torch.nn.Module):
         for i in range(len(encoder_nodes)-2):
             bw = ceil(0.5*(encoder_nodes[i]+encoder_nodes[i+1]))
             temp_encoder_nodes = [encoder_nodes[i],bw,bw,encoder_nodes[i+1]]
-            seq.append(Linear_wResidualBlock(temp_encoder_nodes,activation,dropout_p,res_trainable,res_initZeros))
+            if residual:
+                seq.append(Linear_wResidualBlock(temp_encoder_nodes,activation,dropout_p,res_trainable,res_initZeros))
+            else:
+                self.seq.append(torch.nn.Linear(nodes[i],nodes[i+1]), torch.nn.Dropout(dropout_p), activation)
+                
             if identity_block_every_layer:
                 temp_encoder_nodes = [encoder_nodes[i+1],encoder_nodes[i+1]]
                 seq.append(FCNN_IdentityBlock(encoder_nodes[i+1],temp_encoder_nodes,activation,dropout_p,res_trainable,res_initZeros))
@@ -184,8 +185,8 @@ class _resFCNN_autoEncoder(torch.nn.Module):
         return self.encoder(x)
 
 
-def resFCNN_autoEncoder(encoder_nodes,decoder_nodes, activation=torch.nn.ReLU(), dropout_p=0.0, res_trainable=True, res_initZeros=False, identity_block_every_layer=True):
-    model = _resFCNN_autoEncoder(encoder_nodes,decoder_nodes,activation,dropout_p,res_trainable,res_initZeros).to(device)
+def resFCNN_autoEncoder(encoder_nodes,decoder_nodes, activation=torch.nn.ReLU(), dropout_p=0.0, res_trainable=True, res_initZeros=False, identity_block_every_layer=True, residual=True):
+    model = _resFCNN_autoEncoder(encoder_nodes,decoder_nodes,activation,dropout_p,res_trainable,res_initZeros,residual).to(device)
     return model
 
 
