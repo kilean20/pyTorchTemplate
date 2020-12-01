@@ -360,7 +360,7 @@ class resFCNN_VAE():
             hist['test_loss'] = np.zeros(old_epochs+epochs)
             hist['test_loss'][:old_epochs] = old_hist['test_loss' ][:]
 
-        with torch.autograd.set_detect_anomaly(True).
+        with torch.autograd.set_detect_anomaly(True):
             for epoch in range(epochs):
                 if flagEvalMode:
                     self.model.eval()
