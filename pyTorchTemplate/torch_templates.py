@@ -77,7 +77,7 @@ class FCNN_IdentityBlock(torch.nn.Module):
 
     def forward(self, x):
         y  = self.IdentityBlock(x)
-        y += x
+        y = y + x
         return y
     
     
@@ -111,8 +111,8 @@ class Linear_wResidualBlock(torch.nn.Module):
             self.nn = torch.nn.Sequential(torch.nn.Linear(nodes[0],nodes[-1]),                             activation)
 
     def forward(self, x):
-        y  = self.nn(x)
-        y += self.ResidualBlock(x)
+        y = self.nn(x)
+        y = y + self.ResidualBlock(x)
         return y
     
     
@@ -289,7 +289,7 @@ class resFCNN_VAE():
         BCE = BCE/nsample
 
         KLD = -0.5 * torch.sum(1 + weight_sigma*(logvar -logvar.exp()) -weight_mu*mu.pow(2) )
-        KLD /= batch_size
+        KLD = KLD / batch_size
 
         return BCE + weight_KLD*KLD
     
@@ -301,8 +301,8 @@ class resFCNN_VAE():
         with torch.no_grad():
             for data in data_loader:
                 if self.supervised:
-                    x=data[0]
-                    y=data[1]
+                    x = data[0]
+                    y = data[1]
                     x = x.to(device)
                     y = y.to(device)
                 else:
@@ -321,15 +321,15 @@ class resFCNN_VAE():
                     y_pred.append(self.model.decoder(z))
                     loss = self.loss_function(y, y_pred, mu, logvar, 
                                               batch_size, weight_mu, weight_sigma, weight_KLD, nsample)
-                    test_loss += loss.item()
+                    test_loss = test_loss + loss.item()
                 else:
                     for i in range(nsample):
                         z = self.model.reparameterize(mu, logvar)
                         y_pred.append(self.model.decoder(z))
                         loss = self.loss_function(y, y_pred, mu, logvar, 
                                                   batch_size, weight_mu, weight_sigma, weight_KLD, nsample)
-                        test_loss += loss.item()
-        test_loss /= len(data_loader)
+                        test_loss = test_loss + loss.item()
+        test_loss = test_loss/len(data_loader)
         return test_loss
         
     
@@ -360,104 +360,104 @@ class resFCNN_VAE():
             hist['test_loss'] = np.zeros(old_epochs+epochs)
             hist['test_loss'][:old_epochs] = old_hist['test_loss' ][:]
 
-        with torch.autograd.set_detect_anomaly(True):
-            for epoch in range(epochs):
-                if flagEvalMode:
-                    self.model.eval()
+            
+        for epoch in range(epochs):
+            if flagEvalMode:
+                self.model.eval()
+            else:
+                self.model.train()
+            train_loss = 0
+            for data in train_data_loader:
+                if self.supervised:
+                    x = data[0]
+                    y = data[1]
+                    x = x.to(device)
+                    y = y.to(device)
                 else:
-                    self.model.train()
-                train_loss = 0
-                for data in train_data_loader:
-                    if self.supervised:
-                        x = data[0]
-                        y = data[1]
+                    x = data
+                    x = x.to(device)
+                    y = x
+                batch_size = len(y)
+                opt.zero_grad()
+
+                x = self.model.encoder(x)
+                mu = torch.clamp(self.model.Mu(x), min=-1000.0,max=1000.0)                
+                logvar = torch.clamp(self.model.LogVar(x), min=-10.0,max=10.0)
+                y_pred = []
+                for i in range(nsample):
+                    z = self.model.reparameterize(mu, logvar)
+                    y_pred.append(self.model.decoder(z))
+                    loss = self.loss_function(y, y_pred, mu, logvar, 
+                                              batch_size, weight_mu, weight_sigma, weight_KLD, nsample)
+                loss.backward()
+                opt.step()
+                train_loss = train_loss + loss.item()
+            train_loss = train_loss/len(train_data_loader)
+            hist['train_loss'][old_epochs+epoch] = train_loss
+
+
+            if test_data_loader == None:
+                test_loss = train_loss
+            else:
+                self.model.eval()
+                test_loss = 0
+                with torch.no_grad():
+                    for data in test_data_loader:
+                        if self.supervised:
+                            x=data[0]
+                            y=data[1]
+                        else:
+                            x=data
+                            y=x
+
                         x = x.to(device)
                         y = y.to(device)
+
+                        x = self.model.encoder(x)
+                        mu = self.model.Mu(x)
+                        logvar = self.model.LogVar(x)
+                        y_pred = []
+                        for i in range(nsample):
+                            z = self.model.reparameterize(mu, logvar)
+                            y_pred.append(self.model.decoder(z))
+                            loss = self.loss_function(y, y_pred, mu, logvar, 
+                                                      batch_size, weight_mu, weight_sigma, weight_KLD, nsample)
+
+                        test_loss = test_loss + loss.item()
+                test_loss = test_loss/len(test_data_loader)
+                hist['test_loss' ][old_epochs+epoch] = test_loss
+
+
+            flag_best = False
+            if old_best_loss != None:
+                if test_loss < old_best_loss:
+                    flag_best = True
+                    old_best_loss = test_loss
+                    checkpoint = {'epoch':old_epochs+epoch, 
+                                  'model':self.model,
+                                  'model_state_dict':self.model.state_dict(), 
+                                  'optimizer':opt,
+                                  'optimizer_state_dict':opt.state_dict()}
+                    if fname!=None:
+                        torch.save(checkpoint, fname + '_best.checkpoint')
                     else:
-                        x = data
-                        x = x.to(device)
-                        y = x
-                    batch_size = len(y)
-                    opt.zero_grad()
-
-                    x = self.model.encoder(x)
-                    mu = torch.clamp(self.model.Mu(x), min=-1000.0,max=1000.0)                
-                    logvar = torch.clamp(self.model.LogVar(x), min=-10.0,max=10.0)
-                    y_pred = []
-                    for i in range(nsample):
-                        z = self.model.reparameterize(mu, logvar)
-                        y_pred.append(self.model.decoder(z))
-                        loss = self.loss_function(y, y_pred, mu, logvar, 
-                                                  batch_size, weight_mu, weight_sigma, weight_KLD, nsample)
-                    loss.backward()
-                    opt.step()
-                    train_loss += loss.item()
-                train_loss /= len(train_data_loader)
-                hist['train_loss'][old_epochs+epoch] = train_loss
+                        torch.save(checkpoint, '_best.checkpoint')
 
 
-                if test_data_loader == None:
-                    test_loss = train_loss
-                else:
-                    self.model.eval()
-                    test_loss = 0
-                    with torch.no_grad():
-                        for data in test_data_loader:
-                            if self.supervised:
-                                x=data[0]
-                                y=data[1]
-                            else:
-                                x=data
-                                y=x
-
-                            x = x.to(device)
-                            y = y.to(device)
-
-                            x = self.model.encoder(x)
-                            mu = self.model.Mu(x)
-                            logvar = self.model.LogVar(x)
-                            y_pred = []
-                            for i in range(nsample):
-                                z = self.model.reparameterize(mu, logvar)
-                                y_pred.append(self.model.decoder(z))
-                                loss = self.loss_function(y, y_pred, mu, logvar, 
-                                                          batch_size, weight_mu, weight_sigma, weight_KLD, nsample)
-
-                            test_loss += loss.item()
-                    test_loss /= len(test_data_loader)
-                    hist['test_loss' ][old_epochs+epoch] = test_loss
-
-
-                flag_best = False
-                if old_best_loss != None:
-                    if test_loss < old_best_loss:
-                        flag_best = True
-                        old_best_loss = test_loss
-                        checkpoint = {'epoch':old_epochs+epoch, 
-                                      'model':self.model,
-                                      'model_state_dict':self.model.state_dict(), 
-                                      'optimizer':opt,
-                                      'optimizer_state_dict':opt.state_dict()}
-                        if fname!=None:
-                            torch.save(checkpoint, fname + '_best.checkpoint')
-                        else:
-                            torch.save(checkpoint, '_best.checkpoint')
-
-
-                # display the epoch training loss
-                if epoch < dispHead  or epoch >= epochs -dispTail:
-                    end = '\n'
-                else:
-                    end = '\r'
-                if test_data_loader != None:
-                    print("epoch : {}/{}, train loss = {:.6f}, test loss = {:.6f}".format(
-                          old_epochs +epoch, old_epochs +epochs, 
-                          hist['train_loss'][old_epochs +epoch], 
-                          hist['test_loss'][old_epochs +epoch]), end=end)
-                else:
-                    print("epoch : {}/{}, train loss = {:.6f}".format(
-                          old_epochs +epoch, old_epochs +epochs, 
-                          hist['train_loss'][old_epochs +epoch]), end=end)
+            # display the epoch training loss
+            if epoch < dispHead  or epoch >= epochs -dispTail:
+                end = '\n'
+            else:
+                end = '\r'
+            if test_data_loader != None:
+                print("epoch : {}/{}, train loss = {:.6f}, test loss = {:.6f}".format(
+                      old_epochs +epoch, old_epochs +epochs, 
+                      hist['train_loss'][old_epochs +epoch], 
+                      hist['test_loss'][old_epochs +epoch]), end=end)
+            else:
+                print("epoch : {}/{}, train loss = {:.6f}".format(
+                      old_epochs +epoch, old_epochs +epochs, 
+                      hist['train_loss'][old_epochs +epoch]), end=end)
 
 
 
