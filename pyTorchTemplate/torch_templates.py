@@ -55,7 +55,7 @@ class FCNN_IdentityBlock(torch.nn.Module):
         self.initZeros = initZeros
         
         if self.dropout_p > 0.0:
-            self.seq = [torch.nn.Linear(inout_feature,self.nodes[0]),torch.nn.Dropout(self.dropout_p), self.activation]
+            self.seq = [torch.nn.Linear(inout_feature,self.nodes[0]), torch.nn.Dropout(self.dropout_p), self.activation]
         else:
             self.seq = [torch.nn.Linear(inout_feature,self.nodes[0]), self.activation]
         
@@ -76,8 +76,7 @@ class FCNN_IdentityBlock(torch.nn.Module):
                 p.requires_grad  = False
 
     def forward(self, x):
-        y  = x + self.IdentityBlock(x)
-        return y
+        return x + self.IdentityBlock(x)
     
     
 class Linear_wResidualBlock(torch.nn.Module):
@@ -110,8 +109,7 @@ class Linear_wResidualBlock(torch.nn.Module):
             self.nn = torch.nn.Sequential(torch.nn.Linear(nodes[0],nodes[-1]),                             activation)
 
     def forward(self, x):
-        y = self.nn(x) + self.ResidualBlock(x)
-        return y
+        return self.nn(x) + self.ResidualBlock(x)
     
     
 class _resFCNN(torch.nn.Module):
