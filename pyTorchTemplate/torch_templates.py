@@ -76,8 +76,7 @@ class FCNN_IdentityBlock(torch.nn.Module):
                 p.requires_grad  = False
 
     def forward(self, x):
-        y  = self.IdentityBlock(x)
-        y = y + x
+        y  = x + self.IdentityBlock(x)
         return y
     
     
@@ -111,8 +110,7 @@ class Linear_wResidualBlock(torch.nn.Module):
             self.nn = torch.nn.Sequential(torch.nn.Linear(nodes[0],nodes[-1]),                             activation)
 
     def forward(self, x):
-        y = self.nn(x)
-        y = y + self.ResidualBlock(x)
+        y = self.nn(x) + self.ResidualBlock(x)
         return y
     
     
@@ -286,10 +284,10 @@ class resFCNN_VAE():
         BCE = torch.nn.functional.mse_loss(y_pred_lists[0], y_true)
         for i in range(nsample-1):
             BCE = BCE + torch.nn.functional.mse_loss(y_pred_lists[i+1], y_true)
-        BCE = BCE/nsample
+        BCE /= nsample
 
         KLD = -0.5 * torch.sum(1 + weight_sigma*(logvar -logvar.exp()) -weight_mu*mu.pow(2) )
-        KLD = KLD / batch_size
+        KLD /= batch_size
 
         return BCE + weight_KLD*KLD
     
@@ -321,15 +319,15 @@ class resFCNN_VAE():
                     y_pred.append(self.model.decoder(z))
                     loss = self.loss_function(y, y_pred, mu, logvar, 
                                               batch_size, weight_mu, weight_sigma, weight_KLD, nsample)
-                    test_loss = test_loss + loss.item()
+                    test_loss += loss.item()
                 else:
                     for i in range(nsample):
                         z = self.model.reparameterize(mu, logvar)
                         y_pred.append(self.model.decoder(z))
                         loss = self.loss_function(y, y_pred, mu, logvar, 
                                                   batch_size, weight_mu, weight_sigma, weight_KLD, nsample)
-                        test_loss = test_loss + loss.item()
-        test_loss = test_loss/len(data_loader)
+                        test_loss += loss.item()
+        test_loss /= len(data_loader)
         return test_loss
         
     
