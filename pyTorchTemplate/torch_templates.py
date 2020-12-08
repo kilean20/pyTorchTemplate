@@ -513,7 +513,7 @@ class MPELoss(_Loss):
         batch_size = len(input)
         loss =torch.sum((input - target) ** self.p) 
         if self.root:
-            loss = loss** (1.0/p)
+            loss = loss** (1.0/self.p)
         return loss/batch_size
     
     
