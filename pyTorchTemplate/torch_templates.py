@@ -332,6 +332,7 @@ class resFCNN_VAE():
     def train(self,lr,epochs,
               train_data_loader,test_data_loader=None,
               optimizer=torch.optim.Adam,
+              optim_args = {},
               fname = None,
               old_hist = None,
               old_best_loss = None,
@@ -343,7 +344,7 @@ class resFCNN_VAE():
               weight_mu=1, weight_sigma=1, weight_KLD=1):
         
     
-        opt = torch.optim.Adam(self.model.parameters(filter(lambda p: p.requires_grad, self.model.parameters())),lr=lr)
+        opt = optimizer(self.model.parameters(filter(lambda p: p.requires_grad, self.model.parameters())),lr=lr,**optim_args)
 
         if old_hist == None:
             old_hist ={'train_loss':[],'test_loss' :[]}
@@ -515,6 +516,7 @@ def train_supervised(model,lr,epochs,
                      train_data_loader,test_data_loader=None,val_data_loader=None,
                      criterion=torch.nn.MSELoss(),
                      optimizer=torch.optim.Adam,
+                     optim_args = {},
                      fname = None,
                      old_hist = None,
                      old_best_loss = None,
@@ -523,7 +525,7 @@ def train_supervised(model,lr,epochs,
                      flagEvalMode = False,
                      args = None):
     model = model.to(device)
-    opt = torch.optim.Adam(model.parameters(filter(lambda p: p.requires_grad, model.parameters())),lr=lr)
+    opt = optimizer(model.parameters(filter(lambda p: p.requires_grad, model.parameters())),lr=lr, **optim_args)
     
     if old_hist == None:
         old_hist ={'train_loss':[],'test_loss' :[]}
