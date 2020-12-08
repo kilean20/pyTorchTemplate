@@ -497,6 +497,25 @@ class RMSELoss(_Loss):
         return relative_MSE(input, target, reduction=self.reduction)
     
     
+def MSE(input, target, epsilon = 1.0e-6, size_average=None, reduce=None, reduction='sum'):
+    loss = (input - target) ** 2 /(input**2+epsilon)
+    return torch.sum(loss)
+
+
+class MPELoss():
+    def __init__(self,  p=4, root = True ):
+        self.p = p
+        self.root= root
+
+    def forward(self, input, target):
+        batch_size = len(input)
+        loss =torch.sum((input - target) ** self.p) 
+        if self.root:
+            loss = loss** (1.0/p)
+        return loss/batch_size
+    
+    
+    
 def get_val_loss_supervised(model,val_data_loader,criterion):
     model.eval()
     val_loss = 0
