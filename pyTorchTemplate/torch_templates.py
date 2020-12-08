@@ -515,7 +515,6 @@ class MPELoss():
         return loss/batch_size
     
     
-    
 def get_val_loss_supervised(model,val_data_loader,criterion):
     model.eval()
     val_loss = 0
