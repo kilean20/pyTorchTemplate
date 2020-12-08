@@ -502,8 +502,9 @@ def MSE(input, target, epsilon = 1.0e-6, size_average=None, reduce=None, reducti
     return torch.sum(loss)
 
 
+
 class MPELoss():
-    def __init__(self,  p=4, root = True ):
+    def __init__(self, p=4, root = True ):
         self.p = p
         self.root= root
 
@@ -513,6 +514,7 @@ class MPELoss():
         if self.root:
             loss = loss** (1.0/p)
         return loss/batch_size
+    
     
     
 def get_val_loss_supervised(model,val_data_loader,criterion):
