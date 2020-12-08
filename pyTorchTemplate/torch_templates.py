@@ -503,8 +503,9 @@ def MSE(input, target, epsilon = 1.0e-6, size_average=None, reduce=None, reducti
 
 
 
-class MPELoss():
-    def __init__(self, p=4, root = True ):
+class MPELoss(_Loss):
+    def __init__(self, p=4, root = True):
+        super(RMSELoss, self).__init__()
         self.p = p
         self.root= root
 
